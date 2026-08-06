@@ -60,6 +60,22 @@ a {
   text-decoration: none;
 }
 
+.card a,
+.panel a,
+.lead a,
+.note a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.card a:hover,
+.panel a:hover,
+.lead a:hover,
+.note a:hover {
+  filter: brightness(1.08);
+}
+
 img {
   max-width: 100%;
   display: block;
