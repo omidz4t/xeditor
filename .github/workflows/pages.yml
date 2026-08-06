@@ -1,15 +1,14 @@
-# On every push to main:
-#   1. Bump version (patch) + commit + tag
-#   2. Build editor + Pages site
-#   3. Publish WebXDC artifacts
+# On every push to main (except automated release commits):
+#   1. Bump version (patch) + commit + tag + push
+#   2. Build editor (WebXDC) + Pages site (landing is NOT in .xdc)
+#   3. Publish .xdc files to GitHub Releases
 #   4. Deploy GitHub Pages
 #
-# Only `main`. No PR / other branch jobs.
+# Only `main`.
 #
-# Repo settings:
-#   Settings → Pages → Source: GitHub Actions
-#   Actions need write permission to push the release commit/tag
-#   (Settings → Actions → General → Workflow permissions → Read and write).
+# Settings:
+#   · Pages → Source: GitHub Actions
+#   · Actions → General → Workflow permissions → Read and write
 
 name: Main release
 
@@ -28,9 +27,8 @@ concurrency:
 
 jobs:
   release:
-    name: Version · build · publish · pages
+    name: Version · build · release · pages
     runs-on: ubuntu-latest
-    # Ignore the bot release commit itself if [skip ci] was not honored.
     if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
     steps:
       - name: Checkout
@@ -56,13 +54,14 @@ jobs:
       - name: Bump version (patch) · commit · tag
         id: version
         run: |
-          # Always patch-bump on main pushes; auto-commit includes [skip ci] in CI.
           node scripts/bump-version.mjs --force patch --tag --skip-ci
           VERSION=$(node -p "require('./package.json').version")
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "### Release" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **version:** \`${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **sha:** \`${GITHUB_SHA:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Release"
+            echo "- **version:** \`${VERSION}\`"
+            echo "- **trigger sha:** \`${GITHUB_SHA:0:7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push release commit and tag
         run: |
@@ -75,17 +74,59 @@ jobs:
       - name: Verify outputs
         run: |
           test -f dist-pages/index.html
+          test -f dist-pages/styles.css
           test -f dist-pages/app/index.html
           test -f dist-xdc/app.xdc
-          echo "version=${{ steps.version.outputs.version }}"
+          test -f dist-xdc/editor-full.xdc
+          test -f dist-xdc/editor-lite.xdc
+          # Marketing must not be inside the WebXDC package / editor dist
+          if unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing'; then
+            echo "Marketing paths leaked into .xdc" >&2
+            exit 1
+          fi
+          if grep -q 'How it works' dist/index.html; then
+            echo "Landing page must not replace editor dist/index.html" >&2
+            exit 1
+          fi
+          grep -q 'How it works' dist-pages/index.html
+          grep -q 'Collaborative block editor' dist-pages/index.html
+          echo "OK v${{ steps.version.outputs.version }}"
 
-      - name: Upload WebXDC artifacts
+      - name: Upload CI artifacts
         uses: actions/upload-artifact@v4
         with:
           name: webxdc-v${{ steps.version.outputs.version }}
           path: dist-xdc/*.xdc
           if-no-files-found: error
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: XEditor v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            dist-xdc/app.xdc
+            dist-xdc/editor-full.xdc
+            dist-xdc/editor-lite.xdc
+          body: |
+            ## XEditor v${{ steps.version.outputs.version }}
+
+            Collaborative block editor for Delta Chat (WebXDC).
+
+            ### Packages
+            | File | Notes |
+            |------|--------|
+            | `app.xdc` | Default (full fonts) |
+            | `editor-full.xdc` | All Shabnam + Arad weights |
+            | `editor-lite.xdc` | Regular + Bold only (smaller) |
+
+            ### Demo
+            GitHub Pages: marketing site + browser demo under `/app/`  
+            (marketing is **not** included in the `.xdc` files.)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

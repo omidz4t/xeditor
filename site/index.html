@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="XEditor — a collaborative Notion-like block editor for Delta Chat WebXDC. Real-time pages, comments, presence, Markdown import/export, and more."
+      content="XEditor — collaborative Notion-like block editor for Delta Chat WebXDC. How it works, features, and download."
     />
     <meta name="theme-color" content="#2383e2" />
     <title>XEditor — Collaborative block editor for Delta Chat</title>
@@ -21,10 +21,10 @@
           <span>XEditor</span>
         </a>
         <nav class="nav" aria-label="Primary">
+          <a href="#how">How it works</a>
           <a href="#features">Features</a>
-          <a href="#collab">Collaboration</a>
-          <a href="#workflow">Workflow</a>
-          <a class="btn btn--primary" href="./app/">Open editor</a>
+          <a href="#download">Download</a>
+          <a class="btn btn--primary" href="./app/">Open demo</a>
         </nav>
       </div>
     </header>
@@ -33,25 +33,24 @@
       <section class="hero">
         <div class="wrap hero__grid">
           <div>
-            <div class="eyebrow">Delta Chat · WebXDC · offline-first</div>
+            <div class="eyebrow">Delta Chat · WebXDC · no cloud server</div>
             <h1>
-              Write together in a
-              <em>block editor</em>
-              that travels with your chat
+              A shared document that lives
+              <em>inside your chat</em>
             </h1>
             <p class="lead">
-              XEditor is a collaborative Markdown / block document app packaged as a
-              WebXDC mini-app. Share a single file in Delta Chat and co-edit pages,
-              comments, tables, and more — with presence that feels live, without a
-              central server.
+              <strong>XEditor</strong> is a collaborative block editor packaged as a
+              WebXDC app. You send one <code>.xdc</code> file in Delta Chat; everyone
+              in the chat can open it and edit the same workspace — pages, comments,
+              tables, images — with live presence, without signing into a website.
             </p>
             <div class="hero__actions">
-              <a class="btn btn--primary" href="./app/">Try the live demo</a>
-              <a class="btn btn--ghost" href="#features">Explore features</a>
+              <a class="btn btn--primary" href="./app/">Try the browser demo</a>
+              <a class="btn btn--ghost" href="#how">See how it works</a>
             </div>
             <div class="meta-row">
-              <span><strong>CRDT</strong> via Yjs</span>
-              <span><strong>Transport</strong> WebXDC status updates</span>
+              <span><strong>Sync</strong> Yjs CRDT</span>
+              <span><strong>Wire</strong> WebXDC updates</span>
               <span><strong>UI</strong> Svelte 5</span>
             </div>
           </div>
@@ -61,207 +60,228 @@
               <span class="dot"></span>
               <span class="dot"></span>
               <span class="dot"></span>
-              <span class="preview__title">workspace · product notes</span>
+              <span class="preview__title">xeditor · team notes</span>
             </div>
             <div class="preview__body">
               <div class="preview__peers">
                 <span class="peer">You · editing</span>
-                <span class="peer peer--teal">Sam · page 2</span>
+                <span class="peer peer--teal">Alex · online</span>
               </div>
               <div class="preview__line preview__line--title"></div>
               <div class="preview__line"></div>
               <div class="preview__line"></div>
               <div class="preview__line"></div>
-              <div class="preview__comment">“Ship the lite font pack for smaller .xdc?”</div>
+              <div class="preview__comment">Comment on selection · “Ship lite .xdc next?”</div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section id="how">
+        <div class="wrap">
+          <div class="section-head">
+            <h2>How it works</h2>
+            <p>
+              XEditor is not a SaaS doc. The chat carries the app and the updates.
+              This GitHub Pages site only explains the product and hosts a solo demo —
+              the marketing page is never packed into the <code>.xdc</code>.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">1</div>
+              <h3>Install in a chat</h3>
+              <p>
+                Download <code>app.xdc</code> (or full/lite font builds) from
+                <a href="https://github.com/omidz4t/xeditor/releases">Releases</a>,
+                then attach or open it in a Delta Chat group or 1:1 chat.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">2</div>
+              <h3>Edit a shared workspace</h3>
+              <p>
+                Create nested pages, write with blocks (headings, lists, code, tables,
+                images, polls…), leave comments on selections, and use the sidebar to
+                navigate the tree.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">3</div>
+              <h3>Changes fan out in chat</h3>
+              <p>
+                Edits are stored as a Yjs CRDT and sent as WebXDC status updates.
+                Peers merge automatically — even if someone was offline for a while.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">4</div>
+              <h3>See who is here</h3>
+              <p>
+                Presence shows who is online, remote cursors follow collaborators, and
+                you can invite others to follow your view. Reactions (Alt + move) give
+                a quick pulse without leaving the doc.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">5</div>
+              <h3>Import, export, save</h3>
+              <p>
+                Bring in Markdown, folders, ZIP trees, or workspace JSON. Export MD,
+                HTML, plain text, JSON, or a fresh WebXDC. Optionally bind a local
+                folder and save with Ctrl/Cmd+S where the browser allows.
+              </p>
+            </article>
+            <article class="card">
+              <div class="card__icon" aria-hidden="true">6</div>
+              <h3>Stay private</h3>
+              <p>
+                There is no XEditor backend. Delta Chat delivers messages; the document
+                state lives in the webview (IndexedDB) and in the update stream you
+                already trust for that chat.
+              </p>
+            </article>
+          </div>
+
+          <div class="split" style="margin-top: 1.25rem">
+            <div class="panel">
+              <h3>Browser demo (this site)</h3>
+              <ul class="checklist">
+                <li>Opens under <code>/app/</code> with a local WebXDC mock</li>
+                <li>Great for trying UI, blocks, settings, import/export alone</li>
+                <li>Not multi-peer over real chat — use Delta Chat for that</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <h3>Real multi-peer (Delta Chat)</h3>
+              <ul class="checklist">
+                <li>Use a release <code>.xdc</code> inside a chat</li>
+                <li>Everyone opens the same app instance for that chat</li>
+                <li>Presence, cursors, and CRDT sync ride WebXDC updates</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
       <section id="features">
         <div class="wrap">
           <div class="section-head">
-            <h2>Built for real documents</h2>
-            <p>
-              Not a plain text box — a Notion-style block canvas with structure,
-              media, and tools that stay useful in a chat-sized package.
-            </p>
+            <h2>What you get</h2>
+            <p>Editor depth that still fits a chat-sized WebXDC package.</p>
           </div>
 
           <div class="feature-grid">
             <article class="card">
               <div class="card__icon" aria-hidden="true">▦</div>
-              <h3>Block editing</h3>
+              <h3>Block canvas</h3>
               <p>
-                Headings, lists, todos, toggles, quotes, callouts, code blocks,
-                dividers, images, page links, tables, and polls — insert via slash
-                menu or Markdown shortcuts.
+                Headings, bullets, numbered lists, todos, toggles, quotes, callouts,
+                code, dividers, images, page links, tables, polls — slash menu and
+                Markdown shortcuts.
               </p>
             </article>
-
-            <article class="card">
-              <div class="card__icon" aria-hidden="true">⌘</div>
-              <h3>Fast keyboard flow</h3>
-              <p>
-                Command palette, formatting shortcuts, optional Vim mode, and
-                Escape-aware UI layers so panels close in a predictable stack.
-              </p>
-            </article>
-
             <article class="card">
               <div class="card__icon" aria-hidden="true">▤</div>
-              <h3>Nested pages</h3>
+              <h3>Multi-page workspace</h3>
               <p>
-                Multi-page workspaces with a sidebar tree, drag reorder, icons,
-                covers, and page-level layout options.
+                Sidebar tree, drag reorder, icons, covers, breadcrumbs, and page
+                layout options for larger notes and wikis.
               </p>
             </article>
-
             <article class="card">
               <div class="card__icon" aria-hidden="true">💬</div>
-              <h3>Comments &amp; selection</h3>
+              <h3>Comments</h3>
               <p>
-                Highlight text, leave threads, reply in the panel, and jump from
-                gutter markers back to the quoted selection.
+                Select text, start a thread, reply in the panel, jump from gutter
+                markers back to the quote.
               </p>
             </article>
-
             <article class="card">
-              <div class="card__icon" aria-hidden="true">🖼</div>
-              <h3>Images that behave</h3>
+              <div class="card__icon" aria-hidden="true">⌘</div>
+              <h3>Keyboard-first</h3>
               <p>
-                Upload or drop images, resize, captions, lightbox, replace/cut/copy
-                from a context menu — built for the block canvas.
+                Command palette, formatting shortcuts, optional Vim mode, Escape stack
+                that closes dialogs and panels in order.
               </p>
             </article>
-
-            <article class="card">
-              <div class="card__icon" aria-hidden="true">表</div>
-              <h3>Tables &amp; polls</h3>
-              <p>
-                Structured tables with cell formatting, plus lightweight polls for
-                quick group decisions inside the document.
-              </p>
-            </article>
-
             <article class="card">
               <div class="card__icon" aria-hidden="true">ع</div>
-              <h3>RTL &amp; Persian fonts</h3>
+              <h3>RTL &amp; fonts</h3>
               <p>
-                Direction-aware editing with bundled Shabnam and Arad fonts, plus
-                full and lite WebXDC packages for size vs. completeness.
+                Direction-aware editing with Shabnam and Arad. Releases include
+                <strong>full</strong> and <strong>lite</strong> font packs.
               </p>
             </article>
-
-            <article class="card">
-              <div class="card__icon" aria-hidden="true">⇪</div>
-              <h3>Import / export</h3>
-              <p>
-                Markdown files &amp; folders, ZIP trees, workspace JSON, HTML, plain
-                text — bind a local folder and save back with Ctrl/Cmd+S when the
-                browser allows.
-              </p>
-            </article>
-
             <article class="card">
               <div class="card__icon" aria-hidden="true">◎</div>
               <h3>Themes &amp; settings</h3>
               <p>
-                Light, dark, or system theme, editor preferences, sync mode setup,
-                and share-to-chat packaging for WebXDC.
+                Light / dark / system, editor prefs, sync-mode setup on first open,
+                share helpers for packaging the doc again.
               </p>
             </article>
           </div>
         </div>
       </section>
 
-      <section id="collab">
+      <section id="download">
         <div class="wrap">
           <div class="section-head">
-            <h2>Collaboration without a backend</h2>
+            <h2>Download WebXDC builds</h2>
             <p>
-              Peers sync through Delta Chat’s WebXDC channel. The document is a CRDT,
-              so merges stay consistent even when people go offline.
+              Each main release publishes <code>.xdc</code> files on GitHub Releases.
+              Pick the size that fits your chat.
             </p>
-          </div>
-
-          <div class="split">
-            <div class="panel">
-              <h3>Live together</h3>
-              <ul class="checklist">
-                <li>Realtime block sync with Yjs over WebXDC updates</li>
-                <li>Peer presence: who is online and what they are editing</li>
-                <li>Remote cursors and follow invites for shared focus</li>
-                <li>Reactions pie (Alt + move) for lightweight acknowledgment</li>
-                <li>Chat-wide or per-instance sync modes when you open a doc</li>
-              </ul>
-            </div>
-            <div class="panel">
-              <h3>Private by design</h3>
-              <ul class="checklist">
-                <li>No app server to host — the chat is the transport</li>
-                <li>Works as a single <code>.xdc</code> file you can forward</li>
-                <li>Local IndexedDB persistence in the webview</li>
-                <li>Optional folder binding for disk-backed Markdown workflows</li>
-                <li>Export a portable snapshot anytime (JSON / MD / WebXDC)</li>
-              </ul>
-            </div>
-          </div>
-
-          <p class="note">
-            <strong>Demo note:</strong> the browser preview on GitHub Pages uses a
-            local WebXDC mock. Full multi-peer collaboration shines inside Delta Chat
-            (or <code>make run</code> with webxdc-dev).
-          </p>
-        </div>
-      </section>
-
-      <section id="workflow">
-        <div class="wrap">
-          <div class="section-head">
-            <h2>From idea to package</h2>
-            <p>Develop locally, ship a WebXDC, or browse the static demo site.</p>
           </div>
 
           <div class="feature-grid">
             <article class="card">
-              <div class="card__icon" aria-hidden="true">1</div>
-              <h3>Develop</h3>
+              <div class="card__icon" aria-hidden="true">★</div>
+              <h3>app.xdc</h3>
               <p>
-                <code>make dev</code> for Vite + mock, or <code>make run</code> for
-                multi-peer webxdc-dev with a full debugger UI.
+                Default package (same as full fonts). Attach this in Delta Chat for
+                everyday use.
               </p>
             </article>
             <article class="card">
-              <div class="card__icon" aria-hidden="true">2</div>
-              <h3>Build WebXDC</h3>
-              <p>
-                <code>make build</code> produces <code>dist-xdc/app.xdc</code> plus
-                full and lite font variants — this marketing site is not included.
-              </p>
+              <div class="card__icon" aria-hidden="true">A</div>
+              <h3>editor-full.xdc</h3>
+              <p>All Shabnam + Arad weights — best typography, larger download.</p>
             </article>
             <article class="card">
-              <div class="card__icon" aria-hidden="true">3</div>
-              <h3>Share</h3>
-              <p>
-                Attach the <code>.xdc</code> in Delta Chat, or open the GitHub Pages
-                demo editor for a quick solo tryout.
-              </p>
+              <div class="card__icon" aria-hidden="true">a</div>
+              <h3>editor-lite.xdc</h3>
+              <p>Regular + Bold only (woff2) — smaller file when bandwidth matters.</p>
             </article>
           </div>
+
+          <p class="note" style="margin-top: 1.25rem">
+            <strong>This website is separate from the app package.</strong>
+            The landing page under <code>site/</code> is assembled only into
+            GitHub Pages (<code>dist-pages/</code>). WebXDC zips are built from
+            <code>dist/</code> alone, so they never include this marketing page.
+          </p>
         </div>
       </section>
 
       <div class="wrap">
         <div class="cta">
-          <h2>Ready to write?</h2>
+          <h2>Try it now</h2>
           <p>
-            Open the in-browser editor demo, or package a WebXDC build for your
-            Delta Chat group.
+            Open the solo browser demo, or grab a release build for Delta Chat.
           </p>
           <div class="cta__actions">
-            <a class="btn btn--primary" href="./app/">Launch XEditor demo</a>
-            <a class="btn btn--ghost" href="https://github.com/themadorg/deltachat">Source &amp; issues</a>
+            <a class="btn btn--primary" href="./app/">Launch demo editor</a>
+            <a
+              class="btn btn--ghost"
+              href="https://github.com/omidz4t/xeditor/releases"
+              >GitHub Releases</a
+            >
+            <a class="btn btn--ghost" href="https://github.com/omidz4t/xeditor"
+              >Source</a
+            >
           </div>
         </div>
       </div>
@@ -272,6 +292,8 @@
         <span>XEditor · collaborative block editor for WebXDC</span>
         <span>
           <a href="./app/">Demo</a>
+          ·
+          <a href="https://github.com/omidz4t/xeditor/releases">Releases</a>
           ·
           <a href="https://webxdc.org/">WebXDC</a>
           ·
