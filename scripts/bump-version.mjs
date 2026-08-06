@@ -10,12 +10,12 @@
  *   - public/manifest.toml
  *
  * Usage:
- *   node scripts/bump-version.mjs              # apply bump
- *   node scripts/bump-version.mjs --dry-run    # print only
+ *   node scripts/bump-version.mjs              # apply bump + git commit (default)
+ *   node scripts/bump-version.mjs --dry-run    # print only (no write / commit)
  *   node scripts/bump-version.mjs --force patch|minor|major
  *   node scripts/bump-version.mjs --from 0.2.0 # ignore git base version
  *   node scripts/bump-version.mjs --tag        # also create annotated git tag vX.Y.Z
- *   node scripts/bump-version.mjs --commit     # git commit version files
+ *   node scripts/bump-version.mjs --no-commit  # write files only, skip git commit
  *   node scripts/bump-version.mjs --changelog  # prepend CHANGELOG.md section
  *
  * Commit conventions (Angular / conventional commits):
@@ -44,10 +44,14 @@ function flagValue(name) {
 }
 
 const dryRun = hasFlag('--dry-run') || hasFlag('-n')
-const doTag = hasFlag('--tag')
-const doCommit = hasFlag('--commit')
-const doChangelog = hasFlag('--changelog')
+// Commit is ON by default (semantic-release style). Opt out with --no-commit.
+const doCommit = !hasFlag('--no-commit') && !dryRun
+// Tag only when explicitly requested (or via --release which enables tag+changelog).
+const doTag = (hasFlag('--tag') || hasFlag('--release')) && !hasFlag('--no-tag')
+const doChangelog = hasFlag('--changelog') || hasFlag('--release')
 const includeChore = hasFlag('--include-chore')
+// Append [skip ci] to the release commit so CI does not re-trigger after pushing the tag/commit.
+const skipCi = hasFlag('--skip-ci') || process.env.CI === 'true'
 const forceLevel = flagValue('--force') // patch | minor | major
 const fromVersion = flagValue('--from')
 const prereleaseId = flagValue('--prerelease') // e.g. beta → 1.2.0-beta.0
@@ -269,8 +273,14 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
 
-function writeJson(path, data) {
-  writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`, 'utf8')
+/** Replace only the top-level "version" field — keep existing JSON formatting. */
+function updateJsonVersion(path, version) {
+  const text = readFileSync(path, 'utf8')
+  if (!/"version"\s*:\s*"[^"]*"/.test(text)) {
+    die(`${relative(root, path)} has no "version" field`)
+  }
+  const next = text.replace(/("version"\s*:\s*")([^"]*)(")/, `$1${version}$3`)
+  writeFileSync(path, next, 'utf8')
 }
 
 function updateTomlVersion(path, version) {
@@ -289,6 +299,14 @@ function readCurrentVersionFromPackage() {
   return formatSemver(v)
 }
 
+function readFileVersion(path, kind) {
+  if (kind === 'json') {
+    return readJson(path).version
+  }
+  const text = readFileSync(path, 'utf8')
+  return text.match(/^version\s*=\s*"(.*?)"/m)?.[1] ?? null
+}
+
 function applyVersion(version) {
   const changed = []
   for (const file of VERSION_FILES) {
@@ -296,19 +314,13 @@ function applyVersion(version) {
       console.warn(`skip missing ${relative(root, file.path)}`)
       continue
     }
-    if (file.kind === 'json') {
-      const data = readJson(file.path)
-      if (data.version === version) continue
-      data.version = version
-      if (!dryRun) writeJson(file.path, data)
-      changed.push(relative(root, file.path))
-    } else if (file.kind === 'toml-version') {
-      const text = readFileSync(file.path, 'utf8')
-      const m = text.match(/^version\s*=\s*"(.*?)"/m)
-      if (m && m[1] === version) continue
-      if (!dryRun) updateTomlVersion(file.path, version)
-      changed.push(relative(root, file.path))
+    const prev = readFileVersion(file.path, file.kind)
+    if (prev === version) continue
+    if (!dryRun) {
+      if (file.kind === 'json') updateJsonVersion(file.path, version)
+      else updateTomlVersion(file.path, version)
     }
+    changed.push(relative(root, file.path))
   }
   return changed
 }
@@ -377,20 +389,26 @@ function die(msg) {
 function printHelp() {
   console.log(`Usage: node scripts/bump-version.mjs [options]
 
+By default the script writes version files and creates a git commit
+  "chore(release): X.Y.Z". Use --dry-run to preview, --no-commit to skip commit.
+
 Options:
-  --dry-run, -n         Show what would happen without writing
+  --dry-run, -n         Show what would happen without writing or committing
   --force <level>       Ignore commits; bump patch|minor|major
   --from <version>      Base version (default: latest tag or package.json)
   --prerelease <id>     e.g. beta → X.Y.Z-beta.0
   --include-chore       Treat chore/docs/ci/… as patch
   --changelog           Prepend a CHANGELOG.md section
-  --commit              git add + commit version files
+  --release             Changelog + annotated tag (still auto-commits)
+  --no-commit           Write files only; do not git commit
   --tag                 Create annotated tag vX.Y.Z
+  --no-tag              Do not tag even with --release
   --help, -h            This help
 
 Examples:
   node scripts/bump-version.mjs --dry-run
-  node scripts/bump-version.mjs --changelog --commit --tag
+  node scripts/bump-version.mjs                 # bump + commit
+  node scripts/bump-version.mjs --release       # bump + changelog + commit + tag
   node scripts/bump-version.mjs --force minor --dry-run
 `)
 }
@@ -462,33 +480,55 @@ function main() {
     console.log(`changelog    : ${cl}`)
   }
 
-  if (doCommit && !dryRun) {
-    const files = [...changed, ...extraFiles]
-    if (files.length === 0) {
-      // still stage version files in case write was no-op but user wants commit
-      for (const f of VERSION_FILES) {
-        if (existsSync(f.path)) files.push(relative(root, f.path))
+  const versionPaths = VERSION_FILES
+    .filter((f) => existsSync(f.path))
+    .map((f) => relative(root, f.path))
+  const commitPaths = [...new Set([...changed, ...extraFiles, ...versionPaths])]
+
+  if (dryRun) {
+    if (doCommit || !hasFlag('--no-commit')) {
+      console.log(`commit       : would commit "chore(release): ${nextVersion}"`)
+    } else {
+      console.log('commit       : skipped (--no-commit)')
+    }
+    if (doTag) console.log(`tag          : would create v${nextVersion}`)
+  } else if (doCommit) {
+    git(['add', '--', ...commitPaths])
+    const pending = git(['status', '--porcelain', '--', ...commitPaths], { allowFail: true })
+    if (!pending) {
+      console.log('commit       : nothing to commit (working tree clean for version files)')
+    } else {
+      const msg = skipCi
+        ? `chore(release): ${nextVersion} [skip ci]`
+        : `chore(release): ${nextVersion}`
+      try {
+        execFileSync('git', ['commit', '-m', msg], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: 'pipe',
+        })
+        console.log(`commit       : ${msg}`)
+      } catch (err) {
+        const detail = String(err.stderr || err.stdout || err.message || err)
+        die(`git commit failed:\n${detail}`)
       }
     }
-    git(['add', '--', ...files])
-    git(['commit', '-m', `chore(release): ${nextVersion}`])
-    console.log(`commit       : chore(release): ${nextVersion}`)
-  } else if (doCommit && dryRun) {
-    console.log(`commit       : would commit as "chore(release): ${nextVersion}"`)
+  } else {
+    console.log('commit       : skipped (--no-commit)')
   }
 
-  if (doTag && !dryRun) {
+  if (!dryRun && doTag) {
     const tag = `v${nextVersion}`
-    git(['tag', '-a', tag, '-m', `Release ${nextVersion}`])
-    console.log(`tag          : ${tag}`)
-  } else if (doTag && dryRun) {
-    console.log(`tag          : would create v${nextVersion}`)
+    const exists = git(['rev-parse', '--verify', `refs/tags/${tag}`], { allowFail: true })
+    if (exists) {
+      console.log(`tag          : ${tag} already exists — skipped`)
+    } else {
+      git(['tag', '-a', tag, '-m', `Release ${nextVersion}`])
+      console.log(`tag          : ${tag}`)
+    }
   }
 
   console.log('\nDone.')
-  if (!doCommit && !dryRun) {
-    console.log('Tip: re-run with --commit --tag --changelog to commit, tag, and log.')
-  }
 }
 
 main()
