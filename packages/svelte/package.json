@@ -1,0 +1,57 @@
+{
+  "name": "@xproeditor/svelte",
+  "version": "0.1.0",
+  "description": "Notion-like block editor for Svelte 5 — sticky format toolbar and/or floating bubble toolbar + slash menu.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": [
+    "**/*.css",
+    "**/highlight/hljs-lite.ts",
+    "**/highlight/hljs-lite.js"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "dependencies": {
+    "@xproeditor/core": "0.1.0",
+    "highlight.js": "^11.10.0",
+    "@lucide/svelte": "^1.28.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "svelte": "^5.19.0",
+    "svelte-check": "^4.1.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "@lucide/svelte": "^1.28.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,99 @@
+# Build the editor (WebXDC artifacts as CI downloads) and deploy GitHub Pages.
+#
+# Pages layout (marketing is NOT inside the .xdc):
+#   /           ← site/ landing (features)
+#   /app/       ← Vite editor (from dist/)
+#
+# One-time repo setup (Settings → Pages):
+#   Source: GitHub Actions
+#
+# Site URL (project pages):
+#   https://<owner>.github.io/<repo>/
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build WebXDC + Pages site
+        # `build:pages` = full editor/xdc build, then assemble dist-pages/ (landing + /app)
+        run: npm run build:pages
+
+      - name: Verify Pages layout
+        run: |
+          test -f dist-pages/index.html
+          test -f dist-pages/styles.css
+          test -f dist-pages/app/index.html
+          # Ensure marketing files are not inside the WebXDC tree
+          if unzip -l dist-xdc/app.xdc 2>/dev/null | grep -E 'site/|features' ; then
+            echo "Marketing paths must not appear in the .xdc package" >&2
+            exit 1
+          fi
+          # Landing stylesheet must not live under the editor-only dist/
+          if test -f dist/styles.css && grep -q 'Marketing landing only' dist/styles.css 2>/dev/null; then
+            echo "Landing CSS leaked into dist/" >&2
+            exit 1
+          fi
+          echo "Pages + WebXDC separation OK"
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-pages
+
+      - name: Upload WebXDC packages (CI artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webxdc-packages
+          path: |
+            dist-xdc/*.xdc
+          if-no-files-found: warn
+          retention-days: 14
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,376 @@
+:root,
+html[data-theme='light'] {
+  color-scheme: light;
+  font-family:
+    Arad,
+    Shabnam,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Helvetica,
+    'Apple Color Emoji',
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-size: 16px;
+
+  --page-bg: #ffffff;
+  --page-surface: #ffffff;
+  --page-text: #37352f;
+  --page-width: 1000px;
+  --page-padding-x: 96px;
+  /* Shared content column inset so page title + blocks share one left edge.
+   * Room for absolute drag handle + marquee strip hanging outside the text. */
+  --page-content-inset-start: 36px;
+  --page-content-inset-end: 44px;
+  --page-muted: #9b9a97;
+  /* Title: full opaque solid (no /alpha). */
+  --page-title-color: #37352f;
+  --page-title-placeholder: #d3d1cb;
+  --page-controls-color: #9b9a97;
+  --page-control-hover: #f1f1ef;
+
+  /* Header chrome + liquid-glass island. */
+  --header-bg: #ffffff;
+  --header-border: #e9e9e7;
+  --header-text: #37352f;
+  --header-muted: #9b9a97;
+  --header-hover: rgb(55 53 47 / 0.08);
+  --header-icon: #5f5e5b;
+  --header-icon-hover: #37352f;
+  --header-breadcrumb: #6b6a67;
+  --header-breadcrumb-hover: #37352f;
+  --header-breadcrumb-current: #37352f;
+  --header-breadcrumb-sep: #a8a7a4;
+  --header-share-bg: rgb(255 255 255 / 0.55);
+  --header-share-bg-hover: rgb(255 255 255 / 0.78);
+  --header-share-text: #37352f;
+  --header-star: #dfab01;
+  /* Floating island materials */
+  --header-glass-bg: rgb(255 255 255 / 0.62);
+  --header-glass-border: rgb(255 255 255 / 0.55);
+  --header-glass-highlight: rgb(255 255 255 / 0.55);
+  --header-glass-inset: rgb(255 255 255 / 0.65);
+  --header-glass-divider: rgb(55 53 47 / 0.1);
+  --header-glass-ring: rgb(255 255 255 / 0.85);
+  --header-glass-shadow:
+    0 1px 0 rgb(255 255 255 / 0.55) inset,
+    0 8px 28px rgb(15 15 15 / 0.1),
+    0 2px 8px rgb(15 15 15 / 0.06);
+  --header-title-shadow: 0 1px 2px rgb(255 255 255 / 0.65);
+  --page-chrome-height: 40px;
+  --avatar-more-bg: #e9e9e7;
+  --avatar-border: #ffffff;
+
+  --settings-backdrop: rgb(15 15 15 / 0.28);
+  --settings-panel-bg: #ffffff;
+  --settings-panel-border: rgb(15 15 15 / 0.05);
+  --settings-panel-shadow: 0 24px 48px rgb(15 15 15 / 0.12);
+  --settings-divider: #ebebea;
+  --settings-text: #37352f;
+  --settings-muted: #9b9a97;
+  --settings-hover: #f1f1ef;
+  --settings-control-bg: #f7f6f3;
+  --settings-control-active: #ffffff;
+  --settings-control-border: #e9e9e7;
+
+  --xpe-background: var(--page-surface);
+  --xpe-foreground: #37352f;
+  --xpe-muted-foreground: #9b9a97;
+  --xpe-muted: #f7f6f3;
+  --xpe-border: #e9e9e7;
+  --xpe-primary: #2383e2;
+  --xpe-code-foreground: #e0316e;
+  --xpe-selection: rgb(35 131 226 / 0.18);
+  --xpe-hover: #f1f1ef;
+  --xpe-active: #eef2ff;
+  --xpe-popover-bg: #ffffff;
+  --xpe-popover-border: #e9e9e7;
+
+  --sidebar-width: 260px;
+  --sidebar-bg: #f7f6f3;
+  --sidebar-border: rgb(55 53 47 / 0.09);
+  --sidebar-text: #37352f;
+  --sidebar-muted: rgb(55 53 47 / 0.5);
+  --sidebar-hover: rgb(55 53 47 / 0.08);
+  --sidebar-active: rgb(55 53 47 / 0.1);
+  --sidebar-search-bg: rgb(55 53 47 / 0.06);
+  --sidebar-backdrop: rgb(15 15 15 / 0.28);
+
+  --comment-accent: #2383e2;
+  --comment-text: #37352f;
+  --comment-muted: #9b9a97;
+  --comment-hover: #f1f1ef;
+  --comment-panel-bg: #ffffff;
+  --comment-panel-border: #e9e9e7;
+  --comment-quote-bg: #f7f6f3;
+  --comment-marker-bg: #fff8d6;
+  --comment-marker-active-bg: #ffe89a;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --page-bg: #191919;
+  --page-surface: #191919;
+  --page-text: #e6e6e6;
+  --page-muted: #707070;
+
+  /* Title: full opaque solid (no /alpha). */
+  --page-title-color: #ffffff;
+  --page-title-placeholder: #404040;
+  --page-controls-color: #707070;
+  --page-control-hover: #262626;
+
+  --header-bg: #191919;
+  --header-border: #2e2e2e;
+  --header-text: #e6e6e6;
+  --header-muted: #707070;
+  --header-hover: rgb(255 255 255 / 0.1);
+  --header-icon: #c4c4c4;
+  --header-icon-hover: #ffffff;
+  --header-breadcrumb: #a3a3a3;
+  --header-breadcrumb-hover: #f0f0f0;
+  --header-breadcrumb-current: #f5f5f5;
+  --header-breadcrumb-sep: #5c5c5c;
+  --header-share-bg: rgb(255 255 255 / 0.1);
+  --header-share-bg-hover: rgb(255 255 255 / 0.16);
+  --header-share-text: #f0f0f0;
+  --header-star: #ffcd38;
+  --header-glass-bg: rgb(28 28 28 / 0.58);
+  --header-glass-border: rgb(255 255 255 / 0.12);
+  --header-glass-highlight: rgb(255 255 255 / 0.12);
+  --header-glass-inset: rgb(255 255 255 / 0.1);
+  --header-glass-divider: rgb(255 255 255 / 0.12);
+  --header-glass-ring: rgb(28 28 28 / 0.9);
+  --header-glass-shadow:
+    0 1px 0 rgb(255 255 255 / 0.08) inset,
+    0 10px 32px rgb(0 0 0 / 0.45),
+    0 2px 10px rgb(0 0 0 / 0.28);
+  --header-title-shadow:
+    0 1px 2px rgb(0 0 0 / 0.55),
+    0 0 12px rgb(0 0 0 / 0.25);
+  --page-chrome-height: 40px;
+  --avatar-more-bg: #3a3a3a;
+  --avatar-border: #191919;
+
+  --settings-backdrop: rgb(0 0 0 / 0.55);
+  --settings-panel-bg: #252525;
+  --settings-panel-border: rgb(255 255 255 / 0.06);
+  --settings-panel-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+  --settings-divider: #2f2f2f;
+  --settings-text: rgb(255 255 255 / 0.9);
+  --settings-muted: rgb(255 255 255 / 0.44);
+  --settings-hover: #2f2f2f;
+  --settings-control-bg: #1f1f1f;
+  --settings-control-active: #2f2f2f;
+  --settings-control-border: #3a3a3a;
+
+  --xpe-background: var(--page-surface);
+  --xpe-foreground: rgb(255 255 255 / 0.9);
+  --xpe-muted-foreground: rgb(255 255 255 / 0.376);
+  --xpe-muted: #2f2f2f;
+  --xpe-border: #373737;
+  --xpe-primary: #589ee6;
+  --xpe-code-foreground: #ff7b72;
+  --xpe-selection: rgb(46 120 183 / 0.35);
+  --xpe-hover: #2f2f2f;
+  --xpe-active: rgb(88 158 230 / 0.18);
+  --xpe-popover-bg: #252525;
+  --xpe-popover-border: #373737;
+
+  --sidebar-bg: #202020;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-text: rgb(255 255 255 / 0.9);
+  --sidebar-muted: rgb(255 255 255 / 0.44);
+  --sidebar-hover: rgb(255 255 255 / 0.055);
+  --sidebar-active: rgb(255 255 255 / 0.09);
+  --sidebar-search-bg: rgb(255 255 255 / 0.06);
+  --sidebar-backdrop: rgb(0 0 0 / 0.55);
+
+  --comment-accent: #589ee6;
+  --comment-text: rgb(255 255 255 / 0.9);
+  --comment-muted: rgb(255 255 255 / 0.44);
+  --comment-hover: #2f2f2f;
+  --comment-panel-bg: #252525;
+  --comment-panel-border: #373737;
+  --comment-quote-bg: #1f1f1f;
+  --comment-marker-bg: rgb(255 212 0 / 0.18);
+  --comment-marker-active-bg: rgb(255 212 0 / 0.32);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Keep layout stable when the soft keyboard opens on mobile. */
+  height: 100%;
+  overflow: hidden;
+  /* No reserved gutter — only one scroll surface (#app) and only when needed. */
+  scrollbar-gutter: auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--page-bg);
+  color: var(--page-text);
+  /* Avoid iOS rubber-band scrolling the whole document under fixed panels. */
+  overscroll-behavior: none;
+  scrollbar-gutter: auto;
+}
+
+/*
+ * Single page scroll root. html/body stay overflow:hidden so we never stack
+ * document + app scrollbars side by side.
+ */
+#app {
+  height: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: auto;
+  /* Firefox: thin overlay-like bar, transparent track */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--page-text, #37352f) 32%, transparent) transparent;
+}
+
+/* WebKit: narrow thumb only — transparent track, no permanent “page edge” strip */
+#app::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+
+#app::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+#app::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--page-text, #37352f) 28%, transparent);
+  border: none;
+  border-radius: 999px;
+}
+
+#app::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--page-text, #37352f) 45%, transparent);
+}
+
+#app::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Suppress any accidental document-level bar (html/body are not scroll roots). */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
+.xpe-pro-editor {
+  border: none;
+  background: transparent;
+}
+
+/*
+ * Global heading styles for the block editor (not scoped).
+ * Ensures H1/H2/H3 stay large+bold even if a contenteditable rule interferes.
+ */
+.block-editor .etb[data-block-type='heading_1'],
+.block-editor .etb.etb-heading_1 {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em;
+}
+
+.block-editor .etb[data-block-type='heading_2'],
+.block-editor .etb.etb-heading_2 {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.015em;
+}
+
+.block-editor .etb[data-block-type='heading_3'],
+.block-editor .etb.etb-heading_3 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+}
+
+.block-editor .etb[data-block-type='heading_4'],
+.block-editor .etb.etb-heading_4 {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.block-editor .etb[data-block-type='heading_5'],
+.block-editor .etb.etb-heading_5 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+}
+
+.block-editor .etb[data-block-type='heading_6'],
+.block-editor .etb.etb-heading_6 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  color: var(--xpe-muted-foreground, #9b9a97);
+}
+
+/*
+ * iOS Safari zooms when focusing form fields with font-size < 16px.
+ * Only force inputs/textareas — NOT contenteditable. Forcing contenteditable
+ * to 16px !important flattened H1/H2/H3 styles to the same size as body text.
+ * Paragraph blocks already use 16px, so the editor stays safe from focus-zoom.
+ * Exclude the page title: it must stay larger than H1 (30px) on phones.
+ */
+@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+  input:not(.notion-page-title-input),
+  textarea:not(.notion-page-title-input),
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Phone: full-width layout (ignore desktop container max-width). */
+@media (max-width: 768px) {
+  :root,
+  html[data-theme='light'],
+  html[data-theme='dark'] {
+    --page-width: 100%;
+    --page-padding-x: 16px;
+    --page-content-inset-start: 8px;
+    --page-content-inset-end: 8px;
+  }
+}
+
+/*
+ * Same tokens when JS detects phone UI (iOS WebXDC may not match max-width MQ).
+ * Set by src/lib/phoneUi.ts on <html data-phone-ui>.
+ */
+html[data-phone-ui],
+html[data-phone-ui][data-theme='light'],
+html[data-phone-ui][data-theme='dark'] {
+  --page-width: 100%;
+  --page-padding-x: 16px;
+  --page-content-inset-start: 8px;
+  --page-content-inset-end: 8px;
+}
