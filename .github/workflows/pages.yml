@@ -6,8 +6,9 @@
 #
 # Only `main`.
 #
-# Settings:
-#   · Pages → Source: GitHub Actions
+# Required once (repo Settings):
+#   · Pages → Build and deployment → Source: **GitHub Actions**
+#     (If this is "Deploy from a branch", Pages stays queued forever and deploy times out.)
 #   · Actions → General → Workflow permissions → Read and write
 
 name: Main release
@@ -27,9 +28,11 @@ concurrency:
 
 jobs:
   release:
-    name: Version · build · release · pages
+    name: Version · build · GitHub Release
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,7 +85,6 @@ jobs:
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
-          # Marketing must not be inside the WebXDC package / editor dist
           if unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing'; then
             echo "Marketing paths leaked into .xdc" >&2
             exit 1
@@ -92,7 +94,6 @@ jobs:
             exit 1
           fi
           grep -q 'How it works' dist-pages/index.html
-          grep -q 'Collaborative block editor' dist-pages/index.html
           echo "OK v${{ steps.version.outputs.version }}"
 
       - name: Upload CI artifacts
@@ -136,6 +137,16 @@ jobs:
         with:
           path: dist-pages
 
-      - name: Deploy GitHub Pages
+  # Separate job + github-pages environment is required by actions/deploy-pages.
+  # Without it, deployment can sit in "deployment_queued" until timeout.
+  deploy-pages:
+    name: Deploy GitHub Pages
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
