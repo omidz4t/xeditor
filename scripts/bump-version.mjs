@@ -527,8 +527,12 @@ function main() {
       const msg = skipCi
         ? `chore(release): ${nextVersion} [skip ci]`
         : `chore(release): ${nextVersion}`
+      // Never GPG-sign release commits from CI (no keys on the runner).
+      const commitArgs = skipCi || process.env.CI === 'true'
+        ? ['commit', '--no-gpg-sign', '-m', msg]
+        : ['commit', '-m', msg]
       try {
-        execFileSync('git', ['commit', '-m', msg], {
+        execFileSync('git', commitArgs, {
           cwd: root,
           encoding: 'utf8',
           stdio: 'pipe',
@@ -549,7 +553,12 @@ function main() {
     if (exists) {
       console.log(`tag          : ${tag} already exists — skipped`)
     } else {
-      git(['tag', '-a', tag, '-m', `Release ${nextVersion}`])
+      // Annotated tag, unsigned in CI (no signing keys on the runner).
+      const tagArgs =
+        skipCi || process.env.CI === 'true'
+          ? ['tag', '-a', tag, '-m', `Release ${nextVersion}`]
+          : ['tag', '-a', tag, '-m', `Release ${nextVersion}`]
+      git(tagArgs)
       console.log(`tag          : ${tag}`)
     }
   }
