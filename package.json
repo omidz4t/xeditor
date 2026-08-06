@@ -1,7 +1,7 @@
 {
   "name": "collab-markdown-editor-svelte",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite --port ${VITE_DEV_PORT:-5173} --strictPort",
@@ -15,7 +15,7 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.app.json",
     "version:dry": "node scripts/bump-version.mjs --dry-run",
     "version:bump": "node scripts/bump-version.mjs",
-    "version:release": "node scripts/bump-version.mjs --changelog --commit --tag"
+    "version:release": "node scripts/bump-version.mjs --release"
   },
   "dependencies": {
     "fflate": "^0.8.2",
