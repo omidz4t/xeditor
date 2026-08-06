@@ -2,14 +2,15 @@
 #   1. Bump version (patch) + commit + tag + push
 #   2. Build editor (WebXDC) + Pages site (landing is NOT in .xdc)
 #   3. Publish .xdc files to GitHub Releases
-#   4. Deploy GitHub Pages
+#   4. Deploy site to the `gh-pages` branch (GitHub Pages)
 #
 # Only `main`.
 #
-# Required once (repo Settings):
-#   · Pages → Build and deployment → Source: **GitHub Actions**
-#     (If this is "Deploy from a branch", Pages stays queued forever and deploy times out.)
-#   · Actions → General → Workflow permissions → Read and write
+# Required once (repo Settings → Pages):
+#   Source: Deploy from a branch
+#   Branch: gh-pages / (root)
+#
+# Also: Actions → General → Workflow permissions → Read and write
 
 name: Main release
 
@@ -19,8 +20,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: main-release
@@ -28,11 +27,9 @@ concurrency:
 
 jobs:
   release:
-    name: Version · build · GitHub Release
+    name: Version · build · release · pages
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +48,7 @@ jobs:
 
       - name: Configure git identity
         run: |
-          # Bot identity only — no GPG/SSH signing keys in CI (unsigned release commits).
+          # Bot identity only — no GPG signing in CI.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config commit.gpgsign false
@@ -66,7 +63,8 @@ jobs:
           {
             echo "### Release"
             echo "- **version:** \`${VERSION}\`"
-            echo "- **trigger sha:** \`${GITHUB_SHA:0:7}\`"
+            echo "- **site:** https://omidz4t.github.io/xeditor/"
+            echo "- **demo:** https://omidz4t.github.io/xeditor/app/"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push release commit and tag
@@ -126,27 +124,20 @@ jobs:
             | `editor-full.xdc` | All Shabnam + Arad weights |
             | `editor-lite.xdc` | Regular + Bold only (smaller) |
 
-            ### Demo
-            GitHub Pages: marketing site + browser demo under `/app/`  
-            (marketing is **not** included in the `.xdc` files.)
+            ### Site
+            - https://omidz4t.github.io/xeditor/
+            - Demo: https://omidz4t.github.io/xeditor/app/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      # Push dist-pages/ to gh-pages branch (avoids deploy-pages queue timeouts).
+      - name: Deploy GitHub Pages (gh-pages branch)
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist-pages
-
-  # Separate job + github-pages environment is required by actions/deploy-pages.
-  # Without it, deployment can sit in "deployment_queued" until timeout.
-  deploy-pages:
-    name: Deploy GitHub Pages
-    needs: release
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist-pages
+          publish_branch: gh-pages
+          force_orphan: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          enable_jekyll: false
