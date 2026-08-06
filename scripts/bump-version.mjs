@@ -71,6 +71,8 @@ const VERSION_FILES = [
   { path: join(root, 'package.json'), kind: 'json' },
   { path: join(root, 'packages/core/package.json'), kind: 'json' },
   { path: join(root, 'packages/svelte/package.json'), kind: 'json' },
+  // Keep lockfile root version in sync so `npm ci` does not fail in CI.
+  { path: join(root, 'package-lock.json'), kind: 'package-lock' },
   { path: join(root, 'public/manifest.toml'), kind: 'toml-version' },
 ]
 
@@ -283,6 +285,29 @@ function updateJsonVersion(path, version) {
   writeFileSync(path, next, 'utf8')
 }
 
+/**
+ * Sync root package-lock.json versions with package.json.
+ * npm ci requires package.json and package-lock.json versions to match.
+ */
+function updatePackageLockVersion(path, version) {
+  const text = readFileSync(path, 'utf8')
+  // Top-level lock "version" and packages[""].version
+  let next = text.replace(
+    /^(\s*"name":\s*"[^"]+",\s*\n\s*"version":\s*")([^"]*)(")/m,
+    `$1${version}$3`,
+  )
+  // Fallback: first "version" after opening brace of lockfile
+  if (next === text) {
+    next = text.replace(/("version"\s*:\s*")([^"]*)(")/, `$1${version}$3`)
+  }
+  // packages[""] entry
+  next = next.replace(
+    /("":\s*\{\s*\n\s*"name":\s*"[^"]+",\s*\n\s*"version":\s*")([^"]*)(")/,
+    `$1${version}$3`,
+  )
+  writeFileSync(path, next, 'utf8')
+}
+
 function updateTomlVersion(path, version) {
   const text = readFileSync(path, 'utf8')
   if (!/^version\s*=/m.test(text)) {
@@ -300,7 +325,7 @@ function readCurrentVersionFromPackage() {
 }
 
 function readFileVersion(path, kind) {
-  if (kind === 'json') {
+  if (kind === 'json' || kind === 'package-lock') {
     return readJson(path).version
   }
   const text = readFileSync(path, 'utf8')
@@ -318,6 +343,7 @@ function applyVersion(version) {
     if (prev === version) continue
     if (!dryRun) {
       if (file.kind === 'json') updateJsonVersion(file.path, version)
+      else if (file.kind === 'package-lock') updatePackageLockVersion(file.path, version)
       else updateTomlVersion(file.path, version)
     }
     changed.push(relative(root, file.path))
