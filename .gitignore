@@ -1,0 +1,116 @@
+# local reference — never commit
+context/
+_vue_ref/
+_app_vue_ref/
+
+# user documents (may contain private chat/editor content)
+*.collab-doc.json
+document-bootstrap.json
+package-manifest.json
+!src/**/package-manifest.ts
+
+# dependencies
+node_modules/
+packages/*/node_modules/
+
+# build / package outputs
+dist/
+dist-xdc/
+dist-pages/
+_site/
+packages/*/dist/
+*.xdc
+*.webxdc
+
+# environment
+.env
+.env.*
+!.env.example
+
+# tooling / caches
+*.local
+.cache/
+.vite/
+.turbo/
+.svelte-kit/
+.eslintcache
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+vite.config.*.timestamp-*
+node_modules/.tmp/
+node_modules/.vite/
+node_modules/.vite-temp/
+
+# package managers
+.pnpm-store/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# test
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+.vitest/
+playwright/.cache/
+
+# agent / AI tooling (local state)
+.cursor/*
+!.cursor/rules/
+.claude/
+.grok/
+.agents/
+.codex/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# editor / IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.orig
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.directory
+
+# secrets
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+
+# deployment previews
+.vercel
+.netlify
+
+# misc
+*.tgz
+*.tmp
+*.temp
+*.map
+.parcel-cache/
+.fusebox/
+.serverless/
+.webpack/

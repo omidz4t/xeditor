@@ -1,0 +1,2 @@
+/* Default = full Shabnam (all weights). Lite packages rewrite this at pack time. */
+@import './shabnam-full.css';

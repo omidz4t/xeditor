@@ -1,0 +1,36 @@
+{
+  "extends": "@tsconfig/svelte/tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@xproeditor/core": ["./packages/core/src/index.ts"],
+      "@xproeditor/svelte": ["./packages/svelte/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "packages/svelte/src/**/*.ts",
+    "packages/svelte/src/**/*.svelte",
+    "packages/core/src/**/*.ts"
+  ],
+  "exclude": [
+    "packages/core/src/**/*.test.ts",
+    "src/**/*.test.ts",
+    "**/_vue_ref/**",
+    "**/_app_vue_ref/**"
+  ]
+}
+
