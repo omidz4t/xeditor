@@ -25,6 +25,7 @@ help:
 	@echo "  make version-dry   Preview semantic version bump from git commits"
 	@echo "  make version-bump  Apply version bump to package.json + manifest"
 	@echo "  make version-release  Bump + CHANGELOG + commit + tag"
+	@echo "  make screenshots   Capture small UI JPEGs via Puppeteer → docs/screenshots/"
 	@echo "  make clean         Remove dist/, dist-xdc/, and dist-pages/"
 	@echo ""
 	@echo "  Font packages after build (Shabnam + Arad):"
@@ -92,6 +93,9 @@ version-bump:
 
 version-release:
 	$(NPM) run version:release
+
+screenshots:
+	$(NPM) run screenshots
 
 clean:
 	rm -rf dist dist-xdc dist-pages _site node_modules/.tmp
