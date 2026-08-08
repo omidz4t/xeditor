@@ -163,7 +163,10 @@ function pageTitleFor(pageId?: string) {
   return page?.title || 'Untitled'
 }
 
-const tabs: { id: SettingsTabId; label: string; icon: typeof Palette; tip: string }[] = [
+const browserOnly = $derived(isBrowserWebxdcMock())
+let deltaNeedOpen = $state(false)
+
+const allTabs: { id: SettingsTabId; label: string; icon: typeof Palette; tip: string }[] = [
   { id: 'appearance', label: 'Appearance', icon: Palette, tip: 'Theme — light, dark, or match the device' },
   { id: 'layout', label: 'Layout', icon: LayoutTemplate, tip: 'Page width — container or full width' },
   { id: 'editor', label: 'Editor', icon: Keyboard, tip: 'Editor behavior such as Vim keybindings' },
@@ -173,7 +176,19 @@ const tabs: { id: SettingsTabId; label: string; icon: typeof Palette; tip: strin
   { id: 'about', label: 'About', icon: Info, tip: 'App and account information' },
 ]
 
+/** Browser demo has no multi-peer collab — hide People entirely. */
+const tabs = $derived(
+  browserOnly ? allTabs.filter((tab) => tab.id !== 'people') : allTabs,
+)
+
 const activeTabMeta = $derived.by(() => tabs.find((tab) => tab.id === activeTab) ?? tabs[0])
+
+// If settings were opened on People while switching into browser-only, land elsewhere.
+$effect(() => {
+  if (browserOnly && activeTab === 'people') {
+    activeTab = 'sync'
+  }
+})
 
 /** Phone: full-screen stack. `null` = root section list; otherwise open sub-page. */
 let mobilePage = $state<SettingsTabId | null>(null)
@@ -216,9 +231,6 @@ const syncModeOptions: { value: CollabSyncMode; label: string }[] = [
   { value: 'chat', label: 'Chat + live' },
   { value: 'local', label: 'Local' },
 ]
-
-const browserOnly = $derived(isBrowserWebxdcMock())
-let deltaNeedOpen = $state(false)
 
 const activeLayout = $derived.by(() => pageLayout ?? 'container')
 const activeSyncMode = $derived.by(() => syncMode ?? null)

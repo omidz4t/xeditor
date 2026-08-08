@@ -9,6 +9,7 @@ import { tick, untrack } from 'svelte'
 import type { PeerPresence } from '../collab/presence'
 import type { PageMeta } from '../collab/document'
 import { pathForPage } from '../collab/folder-binding'
+import { isBrowserWebxdcMock } from '../collab/sync-mode'
 import { portal } from '../lib/portal'
 
 
@@ -462,7 +463,10 @@ function onRenameKeydown(pageId: string, event: KeyboardEvent) {
   }
 }
 
+const hidePeople = $derived(isBrowserWebxdcMock())
+
 function peersOnPage(pageId: string) {
+  if (hidePeople) return [] as PeerPresence[]
   return (peers ?? []).filter((peer) => peer.pageId === pageId)
 }
 

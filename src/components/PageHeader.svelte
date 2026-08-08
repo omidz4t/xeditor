@@ -14,6 +14,7 @@ import { tick } from 'svelte'
 import { hoverTooltip } from '@xproeditor/svelte'
 import type { PageMeta } from '../collab/document'
 import type { PeerPresence } from '../collab/presence'
+import { isBrowserWebxdcMock } from '../collab/sync-mode'
 import { portal } from '../lib/portal'
 import { bindUiLayer } from '../composables/useUiLayers'
 
@@ -150,6 +151,9 @@ let peoplePos = $state({ x: 0, y: 0 })
 let popoverRef = $state<HTMLElement | null>(null)
 let peopleRef = $state<HTMLElement | null>(null)
 let peopleBtnRef = $state<HTMLElement | null>(null)
+
+/** Browser/Pages demo has no multi-peer collab — hide presence UI. */
+const hidePeople = $derived(isBrowserWebxdcMock())
 
 const breadcrumbAncestors = $derived.by(() => {
   const pageList = pages ?? []
@@ -532,6 +536,7 @@ $effect(() => {
 
       <!-- Right glass island: actions (pinned while scrolling) -->
       <div class="notion-topbar__island notion-topbar__island--right" role="toolbar" aria-label="Page actions">
+      {#if !hidePeople}
       <div class="notion-presence">
         <button
           bind:this={peopleBtnRef}
@@ -579,6 +584,7 @@ $effect(() => {
           </span>
         {/if}
       </div>
+      {/if}
 
       {#if activePeer}
         <div
