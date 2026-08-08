@@ -426,7 +426,7 @@ function onTitleKeydown(event: KeyboardEvent) {
     }
   }
 
-  // Notion: Enter or ArrowDown leaves the title and focuses the first body block.
+  // block editor: Enter or ArrowDown leaves the title and focuses the first body block.
   // (ArrowDown while the emoji menu is open is handled above.)
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
@@ -466,7 +466,7 @@ function onDocMouseDown(event: MouseEvent) {
     if (Date.now() < coverIgnoreOutsideUntil) return
     if (
       !coverPickerRef?.contains(target)
-      && !target.closest?.('.notion-page-control--cover')
+      && !target.closest?.('.xeditor-page-control--cover')
       && !target.closest?.('.page-cover__btn')
       && !target.closest?.('.cover-picker')
     ) {
@@ -484,7 +484,7 @@ function onDocMouseDown(event: MouseEvent) {
   }
   if (
     iconChromeOpen
-    && !target.closest?.('.notion-page-icon-wrap')
+    && !target.closest?.('.xeditor-page-icon-wrap')
     && !target.closest?.('.xpe-icon-picker')
     && !target.closest?.('[data-icon-emoji-picker]')
   ) {
@@ -578,10 +578,10 @@ $effect(() => {
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header
-    class="notion-page-header"
-    class:notion-page-header--has-icon={showIcon}
-    class:notion-page-header--has-cover={showCover}
-    class:notion-page-header--bare={bareHeader}
+    class="xeditor-page-header"
+    class:xeditor-page-header--has-icon={showIcon}
+    class:xeditor-page-header--has-cover={showCover}
+    class:xeditor-page-header--bare={bareHeader}
     dir={titleDir}
     onmouseenter={() => (hovered = true)}
     onmouseleave={() => (hovered = false)}
@@ -600,8 +600,8 @@ $effect(() => {
       {#snippet trigger({ selected })}
         {#if selected}
           <div
-            class="notion-page-icon-wrap"
-            class:notion-page-icon-wrap--on-cover={showCover}
+            class="xeditor-page-icon-wrap"
+            class:xeditor-page-icon-wrap--on-cover={showCover}
             onmouseenter={() => (iconHovered = true)}
             onmouseleave={() => (iconHovered = false)}
             onpointerdown={onIconSurfacePointerDown}
@@ -609,7 +609,7 @@ $effect(() => {
           >
             <button
               type="button"
-              class="notion-page-icon"
+              class="xeditor-page-icon"
               aria-label="Change page icon"
               title="Change icon"
             >
@@ -617,8 +617,8 @@ $effect(() => {
             </button>
             <button
               type="button"
-              class="notion-page-icon-remove"
-              class:notion-page-icon-remove--open={showIconChrome}
+              class="xeditor-page-icon-remove"
+              class:xeditor-page-icon-remove--open={showIconChrome}
               aria-label="Remove page icon"
               title="Remove"
               onclick={(e) => {
@@ -630,15 +630,15 @@ $effect(() => {
             </button>
           </div>
         {:else}
-          <span class="notion-page-icon-picker-anchor" aria-hidden="true"></span>
+          <span class="xeditor-page-icon-picker-anchor" aria-hidden="true"></span>
         {/if}
       {/snippet}
     </IconEmojiPicker>
 
-    <div class="notion-page-title-block">
+    <div class="xeditor-page-title-block">
       <textarea
         bind:this={inputRef}
-        class="notion-page-title-input"
+        class="xeditor-page-title-input"
         rows="1"
         placeholder="Untitled"
         spellcheck="true"
@@ -653,51 +653,51 @@ $effect(() => {
     </div>
 
     <div
-      class="notion-page-controls notion-page-controls--below-title"
-      class:notion-page-controls--visible={controlsVisible}
+      class="xeditor-page-controls xeditor-page-controls--below-title"
+      class:xeditor-page-controls--visible={controlsVisible}
     >
       {#if !showIcon}
         <button
           type="button"
-          class="notion-page-control"
+          class="xeditor-page-control"
           aria-label="Add icon"
           title="Add icon"
           onclick={(e) => openIconPicker(e)}
         >
-          <Smile class="notion-page-control__icon" size={14} strokeWidth={2} />
-          <span class="notion-page-control__label">Add icon</span>
+          <Smile class="xeditor-page-control__icon" size={14} strokeWidth={2} />
+          <span class="xeditor-page-control__label">Add icon</span>
         </button>
       {:else}
         <button
           type="button"
-          class="notion-page-control"
+          class="xeditor-page-control"
           aria-label="Change icon"
           title="Change icon"
           onclick={(e) => openIconPicker(e)}
         >
-          <Smile class="notion-page-control__icon" size={14} strokeWidth={2} />
-          <span class="notion-page-control__label">Change icon</span>
+          <Smile class="xeditor-page-control__icon" size={14} strokeWidth={2} />
+          <span class="xeditor-page-control__label">Change icon</span>
         </button>
       {/if}
       <button
         type="button"
-        class="notion-page-control notion-page-control--cover"
+        class="xeditor-page-control xeditor-page-control--cover"
         aria-label={showCover ? 'Change cover' : 'Add cover'}
         title={showCover ? 'Change cover' : 'Add cover'}
         onclick={(e) => openCoverPicker(e)}
       >
-        <Image class="notion-page-control__icon" size={14} strokeWidth={2} />
-        <span class="notion-page-control__label">{showCover ? 'Change cover' : 'Add cover'}</span>
+        <Image class="xeditor-page-control__icon" size={14} strokeWidth={2} />
+        <span class="xeditor-page-control__label">{showCover ? 'Change cover' : 'Add cover'}</span>
       </button>
       <button
         type="button"
-        class="notion-page-control"
+        class="xeditor-page-control"
         aria-label="Add comment"
         title="Add comment"
         onclick={() => onaddComment?.()}
       >
-        <MessageCircle class="notion-page-control__icon" size={14} strokeWidth={2} />
-        <span class="notion-page-control__label">Add comment</span>
+        <MessageCircle class="xeditor-page-control__icon" size={14} strokeWidth={2} />
+        <span class="xeditor-page-control__label">Add comment</span>
       </button>
     </div>
 
@@ -859,7 +859,7 @@ $effect(() => {
  * Title / icon column: same max-width + horizontal padding as `.page-inner`
  * so text lines up with the body. Cover above stays full width.
  */
-.notion-page-header {
+.xeditor-page-header {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -891,26 +891,26 @@ $effect(() => {
   pointer-events: auto;
 }
 
-.page-title-root--content-full .notion-page-header {
+.page-title-root--content-full .xeditor-page-header {
   max-width: none;
 }
 
 /* No cover/icon: keep a full page-header band (title + actions), not a cramped strip. */
-.notion-page-header--bare {
+.xeditor-page-header--bare {
   padding-top: max(48px, calc(var(--page-chrome-height, 44px) + 20px));
   padding-bottom: 8px;
   min-height: 7.5rem;
 }
 
-.notion-page-header--has-icon {
+.xeditor-page-header--has-icon {
   padding-top: 4px;
 }
 
-.notion-page-header--has-cover {
+.xeditor-page-header--has-cover {
   padding-top: 0;
 }
 
-.notion-page-icon-wrap--on-cover {
+.xeditor-page-icon-wrap--on-cover {
   margin-top: -42px;
   z-index: 2;
 }
@@ -919,7 +919,7 @@ $effect(() => {
  * Controls bar: always takes vertical space so hover doesn't jump layout.
  * Opacity only for hover reveal (pointer-events follow visibility).
  */
-.notion-page-controls {
+.xeditor-page-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -936,19 +936,19 @@ $effect(() => {
   transition: opacity 100ms ease;
 }
 
-.notion-page-controls--visible {
+.xeditor-page-controls--visible {
   opacity: 1;
   pointer-events: auto;
 }
 
 /* Icon / cover / comment actions always sit under the page title. */
-.notion-page-controls--below-title {
+.xeditor-page-controls--below-title {
   margin-top: 6px;
   margin-bottom: 0;
   padding-top: 0;
 }
 
-.notion-page-control {
+.xeditor-page-control {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -965,28 +965,28 @@ $effect(() => {
   transition: background 80ms ease;
 }
 
-.notion-page-control:hover:not(:disabled) {
+.xeditor-page-control:hover:not(:disabled) {
   background: var(--page-control-hover, rgb(55 53 47 / 0.08));
 }
 
-.notion-page-control--disabled {
+.xeditor-page-control--disabled {
   cursor: default;
   opacity: 0.72;
 }
 
-.notion-page-control__icon {
+.xeditor-page-control__icon {
   flex-shrink: 0;
   opacity: 0.85;
 }
 
-.notion-page-icon-wrap {
+.xeditor-page-icon-wrap {
   position: relative;
   display: inline-flex;
   align-self: start;
   margin-bottom: 0;
 }
 
-.notion-page-icon {
+.xeditor-page-icon {
   display: block;
   margin: 0;
   padding: 4px;
@@ -999,12 +999,12 @@ $effect(() => {
   transition: transform 120ms ease, background 80ms ease;
 }
 
-.notion-page-icon:hover {
+.xeditor-page-icon:hover {
   transform: scale(1.04);
   background: var(--page-control-hover, rgb(55 53 47 / 0.06));
 }
 
-.notion-page-icon-remove {
+.xeditor-page-icon-remove {
   position: absolute;
   top: 4px;
   inset-inline-end: 4px;
@@ -1024,18 +1024,18 @@ $effect(() => {
   transition: opacity 100ms ease;
 }
 
-.notion-page-icon-remove--open {
+.xeditor-page-icon-remove--open {
   opacity: 1;
   pointer-events: auto;
 }
 
-.notion-page-icon-remove:hover {
+.xeditor-page-icon-remove:hover {
   color: var(--page-text);
   background: var(--page-control-hover, #f1f1ef);
 }
 
 /* Invisible anchor so "Add icon" can still open the picker via ref.open(). */
-.notion-page-icon-picker-anchor {
+.xeditor-page-icon-picker-anchor {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1044,12 +1044,12 @@ $effect(() => {
   pointer-events: none;
 }
 
-.notion-page-title-block {
+.xeditor-page-title-block {
   display: flex;
   align-items: center;
 }
 
-.notion-page-title-input {
+.xeditor-page-title-input {
   display: block;
   width: 100%;
   margin: 0;
@@ -1068,7 +1068,7 @@ $effect(() => {
   caret-color: var(--xpe-primary);
 }
 
-.notion-page-title-input::placeholder {
+.xeditor-page-title-input::placeholder {
   color: var(--page-title-placeholder);
 }
 
@@ -1077,7 +1077,7 @@ $effect(() => {
  * iOS Delta Chat WebXDC often fails (max-width: 768px) alone.
  */
 @media (max-width: 768px) {
-  .notion-page-header {
+  .xeditor-page-header {
     width: 100%;
     max-width: none;
     margin-inline: 0;
@@ -1086,27 +1086,27 @@ $effect(() => {
       calc(var(--page-padding-x, 16px) + var(--page-content-inset-end, 8px));
   }
 
-  .page-title-root--content-full .notion-page-header {
+  .page-title-root--content-full .xeditor-page-header {
     max-width: none;
   }
 
-  .notion-page-header--bare {
+  .xeditor-page-header--bare {
     padding-top: max(36px, calc(var(--page-chrome-height, 44px) + 12px));
     min-height: 6.5rem;
   }
 
-  .notion-page-icon {
+  .xeditor-page-icon {
     font-size: 64px;
   }
 
-  .notion-page-title-input {
+  .xeditor-page-title-input {
     font-size: 36px;
     line-height: 1.15;
     letter-spacing: -0.02em;
   }
 
-  .notion-page-controls,
-  .notion-page-controls--below-title {
+  .xeditor-page-controls,
+  .xeditor-page-controls--below-title {
     opacity: 1;
     pointer-events: auto;
     min-height: 28px;
@@ -1115,7 +1115,7 @@ $effect(() => {
     gap: 4px;
   }
 
-  .notion-page-control {
+  .xeditor-page-control {
     gap: 0;
     padding: 6px;
     min-width: 28px;
@@ -1125,11 +1125,11 @@ $effect(() => {
     background: var(--page-control-hover, rgb(55 53 47 / 0.06));
   }
 
-  .notion-page-control__label {
+  .xeditor-page-control__label {
     display: none;
   }
 
-  .notion-page-control__icon {
+  .xeditor-page-control__icon {
     width: 15px;
     height: 15px;
   }
@@ -1156,7 +1156,7 @@ $effect(() => {
 }
 
 /* Same compact rules when JS forces phone mode (iPhone WebXDC). */
-:global(html[data-phone-ui]) .notion-page-header {
+:global(html[data-phone-ui]) .xeditor-page-header {
   width: 100%;
   max-width: none;
   margin-inline: 0;
@@ -1165,27 +1165,27 @@ $effect(() => {
     calc(var(--page-padding-x, 16px) + var(--page-content-inset-end, 8px));
 }
 
-:global(html[data-phone-ui]) .page-title-root--content-full .notion-page-header {
+:global(html[data-phone-ui]) .page-title-root--content-full .xeditor-page-header {
   max-width: none;
 }
 
-:global(html[data-phone-ui]) .notion-page-header--bare {
+:global(html[data-phone-ui]) .xeditor-page-header--bare {
   padding-top: max(36px, calc(var(--page-chrome-height, 44px) + 12px));
   min-height: 6.5rem;
 }
 
-:global(html[data-phone-ui]) .notion-page-icon {
+:global(html[data-phone-ui]) .xeditor-page-icon {
   font-size: 64px;
 }
 
-:global(html[data-phone-ui]) .notion-page-title-input {
+:global(html[data-phone-ui]) .xeditor-page-title-input {
   font-size: 36px;
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
 
-:global(html[data-phone-ui]) .notion-page-controls,
-:global(html[data-phone-ui]) .notion-page-controls--below-title {
+:global(html[data-phone-ui]) .xeditor-page-controls,
+:global(html[data-phone-ui]) .xeditor-page-controls--below-title {
   opacity: 1;
   pointer-events: auto;
   min-height: 28px;
@@ -1194,7 +1194,7 @@ $effect(() => {
   gap: 4px;
 }
 
-:global(html[data-phone-ui]) .notion-page-control {
+:global(html[data-phone-ui]) .xeditor-page-control {
   gap: 0;
   padding: 6px;
   min-width: 28px;
@@ -1204,11 +1204,11 @@ $effect(() => {
   background: var(--page-control-hover, rgb(55 53 47 / 0.06));
 }
 
-:global(html[data-phone-ui]) .notion-page-control__label {
+:global(html[data-phone-ui]) .xeditor-page-control__label {
   display: none;
 }
 
-:global(html[data-phone-ui]) .notion-page-control__icon {
+:global(html[data-phone-ui]) .xeditor-page-control__icon {
   width: 15px;
   height: 15px;
 }

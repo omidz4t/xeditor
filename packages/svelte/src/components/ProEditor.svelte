@@ -6,7 +6,7 @@
 
   /**
    * Drop-in editor that wires BlockEditor together with the sticky
-   * format toolbar and/or the Notion-like floating bubble toolbar.
+   * format toolbar and/or the block floating bubble toolbar.
    */
   let {
     modelValue,

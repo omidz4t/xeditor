@@ -1,11 +1,11 @@
 # @xproeditor/vue
 
-A Notion-like block editor for Vue 3 — contentEditable-based, with a flat
+A block editor for Vue 3 — contentEditable-based, with a flat
 block model (paragraphs, headings, lists, to-dos, toggles, quotes, callouts,
 code, images, video, tables) and two editing styles built in:
 
 - **Fixed toolbar** — a sticky top toolbar, classic WYSIWYG feel.
-- **Floating (Notion-like)** — a bubble toolbar on text selection plus a `/`
+- **Floating (block)** — a bubble toolbar on text selection plus a `/`
   slash command menu.
 
 No Tailwind, shadcn, or Radix required in your app — styles ship as a single

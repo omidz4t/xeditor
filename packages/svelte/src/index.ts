@@ -1,7 +1,7 @@
 /**
  * @xproeditor/svelte
  *
- * Svelte 5 adapter for the XProEditor Notion-like block editor.
+ * Svelte 5 adapter for the XProEditor block editor.
  * Prefer named imports so bundlers can tree-shake unused components.
  *
  * ```ts

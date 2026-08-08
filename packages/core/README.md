@@ -1,6 +1,6 @@
 # @xproeditor/core
 
-Framework-agnostic engine for **XProEditor**, a Notion-like block editor. This
+Framework-agnostic engine for **XProEditor**, a block editor. This
 package has **zero UI** and **zero framework dependency** — it's the block
 document model, span/mark operations, contentEditable selection helpers,
 clipboard (de)serialization, HTML conversion, and table operations shared by

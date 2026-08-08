@@ -11,7 +11,7 @@ export type BlockRenderEntry =
   | { kind: 'toggle'; block: Block; children: BlockRenderEntry[] }
   | { kind: 'column_list'; block: Block; columns: ColumnRenderEntry[] }
 
-/** Group visible blocks into toggle / column trees (Notion-style layout). */
+/** Group visible blocks into toggle / column trees (block layout). */
 export function groupToggleEntries(
   blocks: Block[],
   start = 0,

@@ -343,8 +343,8 @@ body::-webkit-scrollbar {
  * Exclude the page title: it must stay larger than H1 (30px) on phones.
  */
 @media (hover: none) and (pointer: coarse), (max-width: 768px) {
-  input:not(.notion-page-title-input),
-  textarea:not(.notion-page-title-input),
+  input:not(.xeditor-page-title-input),
+  textarea:not(.xeditor-page-title-input),
   select {
     font-size: 16px !important;
   }

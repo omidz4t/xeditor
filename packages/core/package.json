@@ -1,7 +1,7 @@
 {
   "name": "@xproeditor/core",
   "version": "0.1.15",
-  "description": "Framework-agnostic engine for the XProEditor Notion-like block editor: block model, selection, clipboard, HTML conversion, and table operations.",
+  "description": "Framework-agnostic engine for the XProEditor block editor: block model, selection, clipboard, HTML conversion, and table operations.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -10,7 +10,7 @@
     "directory": "packages/core"
   },
   "homepage": "https://github.com/xofdev/xproeditor#readme",
-  "keywords": ["editor", "block-editor", "notion", "wysiwyg", "rich-text", "contenteditable"],
+  "keywords": ["editor", "block-editor", "wysiwyg", "rich-text", "contenteditable"],
   "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

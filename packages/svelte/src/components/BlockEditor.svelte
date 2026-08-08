@@ -800,7 +800,7 @@ function canStartMarquee(e: PointerEvent): boolean {
   // Force marquee over text with Alt.
   if (e.altKey && inRoot) return true
 
-  // Side strips: always marquee (Notion-like block select gutters on both sides).
+  // Side strips: always marquee (block block select gutters on both sides).
   if (inStrip) return true
 
   if (!inRoot) return false
@@ -1393,7 +1393,7 @@ function reindentUnitTo(unit: Block[], targetIndent: number): Block[] {
   })
 }
 
-/** Notion: collapsed toggles keep a hidden empty child for later editing. */
+/** block editor: collapsed toggles keep a hidden empty child for later editing. */
 function syncTogglePlaceholder(toggle: Block, options?: { history?: boolean }): void {
   if (ensureTogglePlaceholder(blocks, toggle)) {
     touchBlocks()
@@ -1612,7 +1612,7 @@ let bubbleToolbarRef = $state<BubbleToolbarApi | null>(null)
 let iconPickerRequest = $state<{ blockId: string; tab: 'emoji' | 'icon' } | null>(null)
 let pagePickerRequest = $state<{ blockId: string } | null>(null)
 
-/** `:` emoji autocomplete (Notion / Slack style). */
+/** `:` emoji autocomplete (Slack style). */
 interface EmojiMenuState {
   blockId: string
   /** Index of the opening `:`. */
@@ -1869,7 +1869,7 @@ function focusInsertedBlock(block: Block, item: SlashItem) {
 }
 
 /**
- * Insert any block type as a nested child of a toggle (Notion: toggles host
+ * Insert any block type as a nested child of a toggle (block editor: toggles host
  * headings, lists, media, nested toggles, etc.).
  */
 function insertInsideToggle(toggle: Block, item: SlashItem, textBeforeSlash: string): Block {
@@ -2775,7 +2775,7 @@ function continuationIndent(block: Block, idx: number): number {
 }
 
 /**
- * Notion-like leave: Enter on an empty line inside a toggle leaves the collapse
+ * block leave: Enter on an empty line inside a toggle leaves the collapse
  * only when that empty line is the **last** body block (nothing else below it
  * still inside the toggle). Mid-body empty lines stay inside.
  */
@@ -2812,7 +2812,7 @@ function exitToggleBody(_block: Block, idx: number): boolean {
   moved.content = []
 
   blocks.splice(insertAt, 0, moved)
-  // Keep an empty body slot inside the toggle (Notion empty state).
+  // Keep an empty body slot inside the toggle (block editor empty state).
   syncTogglePlaceholder(parent, { history: false })
   pushHistory(true)
   focusBlock(moved.id, 'start')
@@ -2878,7 +2878,7 @@ function enterToggleBody(toggle: Block, idx: number): void {
   }
 
   // Title Enter with existing body content: insert a fresh empty line at the
-  // top of the body (Notion places the caret inside to type).
+  // top of the body (block editor places the caret inside to type).
   const nb = makeBlock('paragraph', {
     content: [],
     props: blockPropsWithIndent(bodyIndent),
@@ -3694,7 +3694,7 @@ return
 
   const selected = selectedBlocksInOrder()
   if (selected.length > 0) {
-    // Replace the current block selection with pasted content (Notion-like).
+    // Replace the current block selection with pasted content (block).
     const firstIdx = blocks.indexOf(selected[0])
     if (firstIdx !== -1) {
       for (const block of [...selected].reverse()) {
@@ -3902,7 +3902,7 @@ return
 }
 
   const idx = blocks.indexOf(block)
-  // Notion: + on a toggle always inserts a nested child inside it.
+  // block editor: + on a toggle always inserts a nested child inside it.
   if (block.type === 'toggle') {
     expandToggleAnchor(block)
   }
@@ -5558,7 +5558,7 @@ function onKeydownCapture(e: KeyboardEvent) {
 
   // Managed multi-block text selection (e.g. Ctrl+A): replace/delete selection.
   // Runs before the native-input early-out so it still works if focus is odd.
-  // Enter clears the selection (same as typing over a selection in Notion/docs).
+  // Enter clears the selection (same as typing over a selection in block editor/docs).
   if (hasActiveManagedSelection()) {
     if (
       e.key === 'Backspace'
