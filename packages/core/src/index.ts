@@ -1,7 +1,7 @@
 /**
  * @xproeditor/core
  *
- * Framework-agnostic engine for the Notion-like block editor: the block
+ * Framework-agnostic engine for the block editor: the block
  * document model, span/mark operations, contentEditable selection helpers,
  * clipboard (de)serialization, HTML <-> span conversion, table operations,
  * and plain-text/HTML export. No DOM framework dependency — consumed by

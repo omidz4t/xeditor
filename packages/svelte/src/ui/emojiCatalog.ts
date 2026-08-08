@@ -1,5 +1,5 @@
 /**
- * Common emoji shortcodes for `:` autocomplete (Notion / Slack style).
+ * Common emoji shortcodes for `:` autocomplete (Slack-style).
  * Keep this list practical — search matches name + aliases.
  */
 

@@ -269,7 +269,7 @@ export function deleteRangeInSpans(spans: InlineSpan[], start: number, end: numb
 
 export function insertTextInSpans(spans: InlineSpan[], offset: number, text: string): InlineSpan[] {
   const [before, after] = splitSpansAt(spans, offset)
-  // Inherit marks from the character before the caret (Notion behavior)
+  // Inherit marks from the character before the caret (block editor behavior)
   const last = before[before.length - 1]
   const inherit = last?.marks ? { ...last.marks } : undefined
 

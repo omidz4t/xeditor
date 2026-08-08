@@ -392,19 +392,19 @@ function onDocumentPointerDown(event: MouseEvent) {
 
   if (activePeerAddr) {
     if (popoverRef?.contains(target)) return
-    if (el.closest?.('.notion-presence__avatar')) return
+    if (el.closest?.('.xeditor-presence__avatar')) return
     closePeerPopover()
   }
 
   if (peopleOpen) {
     if (peopleRef?.contains(target)) return
-    if (el.closest?.('.notion-presence__people-btn')) return
+    if (el.closest?.('.xeditor-presence__people-btn')) return
     closePeoplePanel()
   }
 
   if (moreOpen) {
     if (moreRef?.contains(target)) return
-    if (el.closest?.('.notion-more-btn')) return
+    if (el.closest?.('.xeditor-more-btn')) return
     closeMoreMenu()
   }
 }
@@ -483,20 +483,20 @@ $effect(() => {
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <header
     bind:this={topbarRef}
-    class="notion-topbar"
-    class:notion-topbar--compact={chromeCompact}
+    class="xeditor-topbar"
+    class:xeditor-topbar--compact={chromeCompact}
     style="--page-chrome-height: {headerOffsetPx}px"
   >
-    <div class="notion-topbar__row">
+    <div class="xeditor-topbar__row">
       <!-- Left glass island: nav (pinned; shrinks when scrolled) -->
       <div
-        class="notion-topbar__island notion-topbar__island--left"
-        class:notion-topbar__island--left-solo={breadcrumbAncestors.length === 0}
+        class="xeditor-topbar__island xeditor-topbar__island--left"
+        class:xeditor-topbar__island--left-solo={breadcrumbAncestors.length === 0}
         role="toolbar"
         aria-label="Navigation"
       >
         <button
-          class="notion-icon-btn"
+          class="xeditor-icon-btn"
           type="button"
           aria-label="Toggle sidebar"
           aria-pressed={sidebarOpen}
@@ -507,26 +507,26 @@ $effect(() => {
 
         {#if breadcrumbAncestors.length > 0}
           <nav
-            class="notion-breadcrumb"
-            class:notion-breadcrumb--collapsed={chromeCompact}
+            class="xeditor-breadcrumb"
+            class:xeditor-breadcrumb--collapsed={chromeCompact}
             aria-label="Breadcrumb"
             aria-hidden={chromeCompact}
           >
             {#each breadcrumbItems as item, index (item.type === 'page' ? item.page.id : `ellipsis-${index}`)}
               {#if index > 0}
-                <ChevronRight class="notion-breadcrumb__chevron" size={12} strokeWidth={2} />
+                <ChevronRight class="xeditor-breadcrumb__chevron" size={12} strokeWidth={2} />
               {/if}
               {#if item.type === 'ellipsis'}
-                <span class="notion-breadcrumb__ellipsis" title="More parent pages" aria-hidden="true">…</span>
+                <span class="xeditor-breadcrumb__ellipsis" title="More parent pages" aria-hidden="true">…</span>
               {:else}
                 <button
-                  class="notion-breadcrumb__segment"
+                  class="xeditor-breadcrumb__segment"
                   type="button"
                   title={item.page.title || 'Untitled'}
                   tabindex={chromeCompact ? -1 : 0}
                   onclick={() => onnavigatePage?.(item.page.id)}
                 >
-                  <span class="notion-breadcrumb__label">{item.page.title || 'Untitled'}</span>
+                  <span class="xeditor-breadcrumb__label">{item.page.title || 'Untitled'}</span>
                 </button>
               {/if}
             {/each}
@@ -535,30 +535,30 @@ $effect(() => {
       </div>
 
       <!-- Right glass island: actions (pinned while scrolling) -->
-      <div class="notion-topbar__island notion-topbar__island--right" role="toolbar" aria-label="Page actions">
+      <div class="xeditor-topbar__island xeditor-topbar__island--right" role="toolbar" aria-label="Page actions">
       {#if !hidePeople}
-      <div class="notion-presence">
+      <div class="xeditor-presence">
         <button
           bind:this={peopleBtnRef}
           type="button"
-          class="notion-icon-btn notion-presence__people-btn"
-          class:notion-icon-btn--active={peopleOpen || !!followedPeerAddr}
+          class="xeditor-icon-btn xeditor-presence__people-btn"
+          class:xeditor-icon-btn--active={peopleOpen || !!followedPeerAddr}
           title={peers.length ? 'Find or follow people' : 'No collaborators online'}
           aria-label="Find or follow people"
           aria-expanded={peopleOpen}
           onclick={(e) => openPeoplePanel(e)}
         >
           <UserRound size={18} strokeWidth={1.75} />
-          <span hidden={!( peers.length )} class="notion-presence__count">{peers.length}</span>
+          <span hidden={!( peers.length )} class="xeditor-presence__count">{peers.length}</span>
         </button>
 
         {#if peers.length}
           {#each peers.slice(0, 5) as peer (peer.addr)}
             <button
               type="button"
-              class="notion-presence__avatar"
-              class:notion-presence__avatar--away={peer.pageId && peer.pageId !== currentPageId}
-              class:notion-presence__avatar--active={activePeerAddr === peer.addr || followedPeerAddr === peer.addr}
+              class="xeditor-presence__avatar"
+              class:xeditor-presence__avatar--away={peer.pageId && peer.pageId !== currentPageId}
+              class:xeditor-presence__avatar--active={activePeerAddr === peer.addr || followedPeerAddr === peer.addr}
               style="background: {peer.color}"
               title={`${peer.name} — ${peerPageLabel(peer)}${followedPeerAddr === peer.addr ? ' (following)' : ''}`}
               aria-label={`${peer.name}, ${peerPageLabel(peer)}`}
@@ -571,7 +571,7 @@ $effect(() => {
           {#if peers.length > 5}
             <button
               type="button"
-              class="notion-presence__avatar notion-presence__more notion-presence__people-btn"
+              class="xeditor-presence__avatar xeditor-presence__more xeditor-presence__people-btn"
               title={`${peers.length - 5} more collaborators`}
               aria-label="More collaborators"
               onclick={(e) => openPeoplePanel(e)}
@@ -579,7 +579,7 @@ $effect(() => {
               +{peers.length - 5}
             </button>
           {/if}
-          <span hidden={!( peersHere.length && peersHere.length < peers.length )} class="notion-presence__hint">
+          <span hidden={!( peersHere.length && peersHere.length < peers.length )} class="xeditor-presence__hint">
             {peersHere.length} here
           </span>
         {/if}
@@ -590,42 +590,42 @@ $effect(() => {
         <div
           use:portal
           bind:this={popoverRef}
-          class="notion-peer-popover"
+          class="xeditor-peer-popover"
           style="left: {popoverPos.x}px; top: {popoverPos.y}px"
           role="dialog" tabindex="-1"
           aria-label={`${activePeer.name} presence`}
           onmousedown={(e) => e.stopPropagation()}
         >
-          <div class="notion-peer-popover__header">
-            <span class="notion-peer-popover__avatar" style="background: {activePeer.color}">
+          <div class="xeditor-peer-popover__header">
+            <span class="xeditor-peer-popover__avatar" style="background: {activePeer.color}">
               {activePeer.name.charAt(0).toUpperCase()}
             </span>
-            <div class="notion-peer-popover__copy">
-              <span class="notion-peer-popover__name">{activePeer.name}</span>
-              <span class="notion-peer-popover__page">{peerPageLabel(activePeer)}</span>
+            <div class="xeditor-peer-popover__copy">
+              <span class="xeditor-peer-popover__name">{activePeer.name}</span>
+              <span class="xeditor-peer-popover__page">{peerPageLabel(activePeer)}</span>
             </div>
           </div>
-          <div class="notion-peer-popover__actions">
+          <div class="xeditor-peer-popover__actions">
             <button
               type="button"
-              class="notion-peer-popover__action"
+              class="xeditor-peer-popover__action"
               onclick={() => activePeer && onFindPeer(activePeer)}
             >
               <Search size={14} strokeWidth={2} />
               Find
-              <span class="notion-peer-popover__action-hint">
+              <span class="xeditor-peer-popover__action-hint">
                 {peerOnCurrentPage(activePeer) ? 'Jump to location' : `Go to ${pageTitleFor(activePeer.pageId)}`}
               </span>
             </button>
             <button
               type="button"
-              class="notion-peer-popover__action"
-              class:notion-peer-popover__action--active={isFollowing(activePeer)}
+              class="xeditor-peer-popover__action"
+              class:xeditor-peer-popover__action--active={isFollowing(activePeer)}
               onclick={() => activePeer && onFollowPeer(activePeer)}
             >
               <Crosshair size={14} strokeWidth={2} />
               {isFollowing(activePeer) ? 'Stop following' : 'Follow'}
-              <span class="notion-peer-popover__action-hint">
+              <span class="xeditor-peer-popover__action-hint">
                 {isFollowing(activePeer) ? 'Return to free browsing' : 'Keep view locked to them'}
               </span>
             </button>
@@ -637,17 +637,17 @@ $effect(() => {
         <div
           use:portal
           bind:this={peopleRef}
-          class="notion-people-panel"
+          class="xeditor-people-panel"
           style="left: {peoplePos.x}px; top: {peoplePos.y}px"
           role="dialog" tabindex="-1"
           aria-label="Find people"
           onmousedown={(e) => e.stopPropagation()}
         >
-          <div class="notion-people-panel__header">
-            <span class="notion-people-panel__title">People</span>
+          <div class="xeditor-people-panel__header">
+            <span class="xeditor-people-panel__title">People</span>
             <button
               type="button"
-              class="notion-people-panel__close"
+              class="xeditor-people-panel__close"
               aria-label="Close"
               onclick={closePeoplePanel}
             >
@@ -655,13 +655,13 @@ $effect(() => {
             </button>
           </div>
 
-          <label class="notion-people-panel__search">
-            <Search size={14} strokeWidth={2} class="notion-people-panel__search-icon" />
+          <label class="xeditor-people-panel__search">
+            <Search size={14} strokeWidth={2} class="xeditor-people-panel__search-icon" />
             <!-- svelte-ignore a11y_autofocus -->
             <input
               bind:value={peopleQuery}
               type="search"
-              class="notion-people-panel__input"
+              class="xeditor-people-panel__input"
               placeholder="Find a person…"
               autocomplete="off"
               autofocus
@@ -669,33 +669,33 @@ $effect(() => {
           </label>
 
           {#if !peers.length}
-            <p class="notion-people-panel__empty">
+            <p class="xeditor-people-panel__empty">
               No one else is online right now.
             </p>
           {:else if !filteredPeers.length}
-            <p class="notion-people-panel__empty">
+            <p class="xeditor-people-panel__empty">
               No matches for “{peopleQuery.trim()}”.
             </p>
           {:else}
-            <ul class="notion-people-panel__list">
+            <ul class="xeditor-people-panel__list">
               {#each filteredPeers as peer (peer.addr)}
-                <li class="notion-people-panel__row">
-                  <span class="notion-people-panel__avatar" style="background: {peer.color}">
+                <li class="xeditor-people-panel__row">
+                  <span class="xeditor-people-panel__avatar" style="background: {peer.color}">
                     {peer.name.charAt(0).toUpperCase()}
                   </span>
-                  <div class="notion-people-panel__copy">
-                    <span class="notion-people-panel__name">
+                  <div class="xeditor-people-panel__copy">
+                    <span class="xeditor-people-panel__name">
                       {peer.name}
                       {#if isFollowing(peer)}
-                        <span class="notion-people-panel__badge">Following</span>
+                        <span class="xeditor-people-panel__badge">Following</span>
                       {/if}
                     </span>
-                    <span class="notion-people-panel__page">{peerPageLabel(peer)}</span>
+                    <span class="xeditor-people-panel__page">{peerPageLabel(peer)}</span>
                   </div>
-                  <div class="notion-people-panel__btns">
+                  <div class="xeditor-people-panel__btns">
                     <button
                       type="button"
-                      class="notion-people-panel__btn"
+                      class="xeditor-people-panel__btn"
                       aria-label="Find"
                       use:hoverTooltip={"Jump to where this person is on the page"}
                       onclick={() => onFindPeer(peer)}
@@ -704,8 +704,8 @@ $effect(() => {
                     </button>
                     <button
                       type="button"
-                      class="notion-people-panel__btn"
-                      class:notion-people-panel__btn--active={isFollowing(peer)}
+                      class="xeditor-people-panel__btn"
+                      class:xeditor-people-panel__btn--active={isFollowing(peer)}
                       aria-label={isFollowing(peer) ? 'Stop following' : 'Follow'}
                       use:hoverTooltip={isFollowing(peer) ? 'Stop following their viewport' : 'Follow their viewport as they move'}
                       onclick={() => onFollowPeer(peer)}
@@ -721,14 +721,14 @@ $effect(() => {
       {/if}
 
       <button
-        class="notion-share-btn"
+        class="xeditor-share-btn"
         type="button"
         aria-label="Share"
         use:hoverTooltip={"Share this document to another chat"}
         onclick={() => onopenShare?.()}
       >
         <svg
-          class="notion-share-btn__icon"
+          class="xeditor-share-btn__icon"
           width="16"
           height="16"
           viewBox="0 0 24 24"
@@ -745,12 +745,12 @@ $effect(() => {
           <line x1="8.59" x2="15.42" y1="13.51" y2="17.49" />
           <line x1="15.41" x2="8.59" y1="6.51" y2="10.49" />
         </svg>
-        <span class="notion-share-btn__label">Share</span>
+        <span class="xeditor-share-btn__label">Share</span>
       </button>
 
       <button
-        class="notion-icon-btn notion-icon-btn--comments"
-         class:notion-icon-btn--active-comments={commentsOpen}
+        class="xeditor-icon-btn xeditor-icon-btn--comments"
+         class:xeditor-icon-btn--active-comments={commentsOpen}
         type="button"
         aria-label="Comments"
          aria-pressed={commentsOpen}
@@ -758,12 +758,12 @@ $effect(() => {
         onclick={() => onopenComments?.()}
       >
         <MessageCircle size={18} strokeWidth={1.75} />
-        <span hidden={!( commentCount )} class="notion-comments-badge">{commentCount > 99 ? '99+' : commentCount}</span>
+        <span hidden={!( commentCount )} class="xeditor-comments-badge">{commentCount > 99 ? '99+' : commentCount}</span>
       </button>
 
       <button
         bind:this={moreBtnRef}
-        class="notion-icon-btn notion-more-btn"
+        class="xeditor-icon-btn xeditor-more-btn"
         type="button"
         aria-label="More actions"
         aria-expanded={moreOpen}
@@ -779,7 +779,7 @@ $effect(() => {
       <div
         use:portal
         bind:this={moreRef}
-        class="notion-more-menu"
+        class="xeditor-more-menu"
         style="left: {morePos.x}px; top: {morePos.y}px"
         role="menu" tabindex="-1"
         aria-label="More actions"
@@ -787,30 +787,30 @@ $effect(() => {
       >
         <button
           type="button"
-          class="notion-more-menu__item"
+          class="xeditor-more-menu__item"
           role="menuitem"
           onclick={onImportMarkdown}
         >
           <FileUp size={16} strokeWidth={2} />
-          <span class="notion-more-menu__label">Import…</span>
+          <span class="xeditor-more-menu__label">Import…</span>
         </button>
         <button
           type="button"
-          class="notion-more-menu__item"
+          class="xeditor-more-menu__item"
           role="menuitem"
           onclick={onExportMarkdown}
         >
           <FileDown size={16} strokeWidth={2} />
-          <span class="notion-more-menu__label">Export as Markdown</span>
+          <span class="xeditor-more-menu__label">Export as Markdown</span>
         </button>
         <button
           type="button"
-          class="notion-more-menu__item"
+          class="xeditor-more-menu__item"
           role="menuitem"
           onclick={onOpenSettingsFromMore}
         >
           <Settings size={16} strokeWidth={2} />
-          <span class="notion-more-menu__label">Settings</span>
+          <span class="xeditor-more-menu__label">Settings</span>
         </button>
       </div>
     {/if}
@@ -823,7 +823,7 @@ $effect(() => {
  * Pinned chrome: sticky within #app.
  * Expanded at scroll top; compact while scrolled (smaller islands).
  */
-.notion-topbar {
+.xeditor-topbar {
   /* Default (at top): compact glass, still a bit larger than scrolled state */
   --chrome-pad-y: 5px;
   --chrome-pad-x: 10px;
@@ -867,7 +867,7 @@ $effect(() => {
 }
 
 /* Scrolled: slightly tighter than the already-small default */
-.notion-topbar--compact {
+.xeditor-topbar--compact {
   --chrome-pad-y: 3px;
   --chrome-pad-x: 8px;
   --island-min-h: 28px;
@@ -883,17 +883,17 @@ $effect(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .notion-topbar,
-  .notion-topbar__island,
-  .notion-icon-btn,
-  .notion-share-btn,
-  .notion-presence__avatar,
-  .notion-breadcrumb {
+  .xeditor-topbar,
+  .xeditor-topbar__island,
+  .xeditor-icon-btn,
+  .xeditor-share-btn,
+  .xeditor-presence__avatar,
+  .xeditor-breadcrumb {
     transition-duration: 0.01ms !important;
   }
 }
 
-.notion-topbar__row {
+.xeditor-topbar__row {
   pointer-events: none;
   display: flex;
   flex-wrap: nowrap;
@@ -907,7 +907,7 @@ $effect(() => {
 }
 
 /* Liquid glass islands — size driven by --island-* / --icon-size tokens */
-.notion-topbar__island {
+.xeditor-topbar__island {
   pointer-events: auto;
   position: relative;
   display: flex;
@@ -940,13 +940,13 @@ $effect(() => {
     box-shadow 0.32s ease;
 }
 
-.notion-topbar--compact .notion-topbar__island {
+.xeditor-topbar--compact .xeditor-topbar__island {
   box-shadow:
     0 1px 0 var(--header-glass-inset),
     0 4px 14px rgb(15 15 15 / 0.08);
 }
 
-.notion-topbar__island--left {
+.xeditor-topbar__island--left {
   flex: 0 1 auto;
   justify-content: flex-start;
   max-width: min(55%, 480px);
@@ -958,19 +958,19 @@ $effect(() => {
 }
 
 /* Sidebar toggle alone — no empty end padding. */
-.notion-topbar__island--left-solo {
+.xeditor-topbar__island--left-solo {
   padding-inline: 2px;
 }
 
-.notion-topbar--compact .notion-topbar__island--left {
+.xeditor-topbar--compact .xeditor-topbar__island--left {
   padding-inline: 1px;
 }
 
-.notion-topbar--compact .notion-topbar__island--left-solo {
+.xeditor-topbar--compact .xeditor-topbar__island--left-solo {
   padding-inline: 1px;
 }
 
-.notion-topbar__island--right {
+.xeditor-topbar__island--right {
   flex: 0 0 auto;
   justify-content: flex-end;
   max-width: min(55%, 480px);
@@ -979,17 +979,17 @@ $effect(() => {
   margin-inline-start: auto;
 }
 
-.notion-topbar--compact .notion-topbar__island--right {
+.xeditor-topbar--compact .xeditor-topbar__island--right {
   padding-inline: 2px 1px;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .notion-topbar__island {
+  .xeditor-topbar__island {
     background: var(--header-bg);
   }
 }
 
-.notion-topbar__island::before {
+.xeditor-topbar__island::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -999,22 +999,22 @@ $effect(() => {
   z-index: 0;
 }
 
-.notion-topbar__island > * {
+.xeditor-topbar__island > * {
   position: relative;
   z-index: 1;
 }
 
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
-  .notion-topbar {
+  .xeditor-topbar {
     --chrome-pad-x: 8px;
   }
 
-  .notion-topbar__row {
+  .xeditor-topbar__row {
     gap: 6px;
   }
 }
 
-.notion-icon-btn {
+.xeditor-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1037,31 +1037,31 @@ $effect(() => {
   line-height: 0;
 }
 
-.notion-icon-btn:hover {
+.xeditor-icon-btn:hover {
   background: var(--header-hover);
   color: var(--header-icon-hover);
 }
 
-.notion-icon-btn:active {
+.xeditor-icon-btn:active {
   transform: scale(0.92);
 }
 
-.notion-icon-btn--active {
+.xeditor-icon-btn--active {
   color: var(--header-star);
   background: var(--header-hover);
 }
 
-.notion-icon-btn--comments {
+.xeditor-icon-btn--comments {
   position: relative;
   overflow: visible;
 }
 
-.notion-icon-btn--active-comments {
+.xeditor-icon-btn--active-comments {
   background: color-mix(in srgb, var(--comment-accent, #2383e2) 16%, transparent);
   color: var(--comment-accent, #2383e2);
 }
 
-.notion-comments-badge {
+.xeditor-comments-badge {
   position: absolute;
   top: -2px;
   right: -2px;
@@ -1080,7 +1080,7 @@ $effect(() => {
   box-shadow: 0 0 0 1.5px var(--header-glass-ring, rgb(255 255 255 / 0.75));
 }
 
-.notion-breadcrumb {
+.xeditor-breadcrumb {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -1102,7 +1102,7 @@ $effect(() => {
   -ms-overflow-style: none;
 }
 
-.notion-breadcrumb--collapsed {
+.xeditor-breadcrumb--collapsed {
   max-width: 0;
   margin-left: 0;
   opacity: 0;
@@ -1110,11 +1110,11 @@ $effect(() => {
   pointer-events: none;
 }
 
-.notion-breadcrumb::-webkit-scrollbar {
+.xeditor-breadcrumb::-webkit-scrollbar {
   display: none;
 }
 
-.notion-breadcrumb__segment {
+.xeditor-breadcrumb__segment {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1136,7 +1136,7 @@ $effect(() => {
   overflow: hidden;
 }
 
-.notion-breadcrumb__label {
+.xeditor-breadcrumb__label {
   display: block;
   min-width: 0;
   max-width: 100%;
@@ -1145,7 +1145,7 @@ $effect(() => {
   white-space: nowrap;
 }
 
-.notion-breadcrumb__ellipsis {
+.xeditor-breadcrumb__ellipsis {
   flex: 0 0 auto;
   padding: 0 2px;
   font-size: var(--crumb-font);
@@ -1155,17 +1155,17 @@ $effect(() => {
   user-select: none;
 }
 
-.notion-breadcrumb__segment:hover {
+.xeditor-breadcrumb__segment:hover {
   background: var(--header-hover);
   color: var(--header-breadcrumb-hover);
 }
 
-.notion-breadcrumb__chevron {
+.xeditor-breadcrumb__chevron {
   flex-shrink: 0;
   color: var(--header-breadcrumb-sep);
 }
 
-.notion-breadcrumb__current {
+.xeditor-breadcrumb__current {
   padding: 6px 10px;
   font-size: 13px;
   font-weight: 600;
@@ -1179,7 +1179,7 @@ $effect(() => {
   max-width: min(220px, 40vw);
 }
 
-.notion-presence {
+.xeditor-presence {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -1190,11 +1190,11 @@ $effect(() => {
   overflow: hidden;
 }
 
-.notion-presence__people-btn {
+.xeditor-presence__people-btn {
   position: relative;
 }
 
-.notion-presence__count {
+.xeditor-presence__count {
   position: absolute;
   top: 2px;
   inset-inline-end: 2px;
@@ -1211,7 +1211,7 @@ $effect(() => {
   pointer-events: none;
 }
 
-.notion-presence__avatar {
+.xeditor-presence__avatar {
   display: grid;
   place-items: center;
   width: var(--avatar-size);
@@ -1233,29 +1233,29 @@ $effect(() => {
     box-shadow 0.12s ease;
 }
 
-.notion-presence__avatar:hover,
-.notion-presence__avatar--active {
+.xeditor-presence__avatar:hover,
+.xeditor-presence__avatar--active {
   transform: translateY(-1px);
   box-shadow: 0 0 0 2px var(--xpe-primary, #2383e2);
   z-index: 1;
 }
 
-.notion-presence__avatar:first-of-type {
+.xeditor-presence__avatar:first-of-type {
   margin-left: 2px;
 }
 
-.notion-presence__more {
+.xeditor-presence__more {
   background: var(--avatar-more-bg);
   color: var(--header-muted);
   font-size: 9px;
   font-weight: 700;
 }
 
-.notion-presence__avatar--away {
+.xeditor-presence__avatar--away {
   opacity: 0.45;
 }
 
-.notion-presence__hint {
+.xeditor-presence__hint {
   margin-left: 6px;
   font-size: 11px;
   color: var(--header-muted);
@@ -1265,7 +1265,7 @@ $effect(() => {
   max-width: 6rem;
 }
 
-.notion-peer-popover {
+.xeditor-peer-popover {
   position: fixed;
   z-index: 100;
   width: min(260px, calc(100vw - 16px));
@@ -1276,13 +1276,13 @@ $effect(() => {
   box-shadow: var(--settings-panel-shadow, 0 16px 40px rgb(15 15 15 / 0.12));
 }
 
-.notion-peer-popover__header {
+.xeditor-peer-popover__header {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.notion-peer-popover__avatar {
+.xeditor-peer-popover__avatar {
   display: grid;
   place-items: center;
   width: 32px;
@@ -1294,20 +1294,20 @@ $effect(() => {
   flex-shrink: 0;
 }
 
-.notion-peer-popover__copy {
+.xeditor-peer-popover__copy {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.notion-peer-popover__name {
+.xeditor-peer-popover__name {
   font-size: 14px;
   font-weight: 600;
   color: var(--settings-text, #37352f);
 }
 
-.notion-peer-popover__page {
+.xeditor-peer-popover__page {
   font-size: 12px;
   color: var(--settings-muted, #9b9a97);
   white-space: nowrap;
@@ -1315,14 +1315,14 @@ $effect(() => {
   text-overflow: ellipsis;
 }
 
-.notion-peer-popover__actions {
+.xeditor-peer-popover__actions {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 10px;
 }
 
-.notion-peer-popover__action {
+.xeditor-peer-popover__action {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1342,16 +1342,16 @@ $effect(() => {
   transition: background 0.12s, color 0.12s;
 }
 
-.notion-peer-popover__action:hover {
+.xeditor-peer-popover__action:hover {
   background: var(--header-hover, #e9e9e7);
 }
 
-.notion-peer-popover__action--active {
+.xeditor-peer-popover__action--active {
   background: color-mix(in srgb, var(--xpe-primary, #2383e2) 14%, transparent);
   color: var(--xpe-primary, #2383e2);
 }
 
-.notion-peer-popover__action-hint {
+.xeditor-peer-popover__action-hint {
   flex: 1 1 100%;
   margin-inline-start: 22px;
   font-size: 11px;
@@ -1359,7 +1359,7 @@ $effect(() => {
   color: var(--settings-muted, #9b9a97);
 }
 
-.notion-people-panel {
+.xeditor-people-panel {
   position: fixed;
   z-index: 100;
   width: min(320px, calc(100vw - 16px));
@@ -1373,7 +1373,7 @@ $effect(() => {
   box-shadow: var(--settings-panel-shadow, 0 16px 40px rgb(15 15 15 / 0.12));
 }
 
-.notion-people-panel__header {
+.xeditor-people-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1381,13 +1381,13 @@ $effect(() => {
   margin-bottom: 8px;
 }
 
-.notion-people-panel__title {
+.xeditor-people-panel__title {
   font-size: 13px;
   font-weight: 600;
   color: var(--settings-text, #37352f);
 }
 
-.notion-people-panel__close {
+.xeditor-people-panel__close {
   display: grid;
   place-items: center;
   width: 28px;
@@ -1401,12 +1401,12 @@ $effect(() => {
   cursor: pointer;
 }
 
-.notion-people-panel__close:hover {
+.xeditor-people-panel__close:hover {
   background: var(--settings-hover, #f1f1ef);
   color: var(--settings-text, #37352f);
 }
 
-.notion-people-panel__search {
+.xeditor-people-panel__search {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1418,12 +1418,12 @@ $effect(() => {
   background: var(--settings-hover, #f1f1ef);
 }
 
-.notion-people-panel__search-icon {
+.xeditor-people-panel__search-icon {
   flex-shrink: 0;
   color: var(--settings-muted, #9b9a97);
 }
 
-.notion-people-panel__input {
+.xeditor-people-panel__input {
   flex: 1;
   min-width: 0;
   border: none;
@@ -1434,18 +1434,18 @@ $effect(() => {
   outline: none;
 }
 
-.notion-people-panel__input::placeholder {
+.xeditor-people-panel__input::placeholder {
   color: var(--settings-muted, #9b9a97);
 }
 
-.notion-people-panel__empty {
+.xeditor-people-panel__empty {
   margin: 12px 4px;
   font-size: 13px;
   color: var(--settings-muted, #9b9a97);
   text-align: center;
 }
 
-.notion-people-panel__list {
+.xeditor-people-panel__list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1455,7 +1455,7 @@ $effect(() => {
   gap: 4px;
 }
 
-.notion-people-panel__row {
+.xeditor-people-panel__row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1463,11 +1463,11 @@ $effect(() => {
   border-radius: 8px;
 }
 
-.notion-people-panel__row:hover {
+.xeditor-people-panel__row:hover {
   background: var(--settings-hover, #f1f1ef);
 }
 
-.notion-people-panel__avatar {
+.xeditor-people-panel__avatar {
   display: grid;
   place-items: center;
   width: 28px;
@@ -1479,7 +1479,7 @@ $effect(() => {
   flex-shrink: 0;
 }
 
-.notion-people-panel__copy {
+.xeditor-people-panel__copy {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1487,7 +1487,7 @@ $effect(() => {
   gap: 1px;
 }
 
-.notion-people-panel__name {
+.xeditor-people-panel__name {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1499,7 +1499,7 @@ $effect(() => {
   text-overflow: ellipsis;
 }
 
-.notion-people-panel__badge {
+.xeditor-people-panel__badge {
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: 999px;
@@ -1509,7 +1509,7 @@ $effect(() => {
   font-weight: 600;
 }
 
-.notion-people-panel__page {
+.xeditor-people-panel__page {
   font-size: 11px;
   color: var(--settings-muted, #9b9a97);
   white-space: nowrap;
@@ -1517,13 +1517,13 @@ $effect(() => {
   text-overflow: ellipsis;
 }
 
-.notion-people-panel__btns {
+.xeditor-people-panel__btns {
   display: flex;
   flex-shrink: 0;
   gap: 4px;
 }
 
-.notion-people-panel__btn {
+.xeditor-people-panel__btn {
   height: 28px;
   padding: 0 8px;
   border: 1px solid var(--settings-panel-border, #e9e9e7);
@@ -1536,17 +1536,17 @@ $effect(() => {
   cursor: pointer;
 }
 
-.notion-people-panel__btn:hover {
+.xeditor-people-panel__btn:hover {
   background: var(--settings-hover, #f1f1ef);
 }
 
-.notion-people-panel__btn--active {
+.xeditor-people-panel__btn--active {
   border-color: color-mix(in srgb, var(--xpe-primary, #2383e2) 40%, transparent);
   background: color-mix(in srgb, var(--xpe-primary, #2383e2) 12%, transparent);
   color: var(--xpe-primary, #2383e2);
 }
 
-.notion-more-menu {
+.xeditor-more-menu {
   position: fixed;
   z-index: 110;
   width: min(240px, calc(100vw - 16px));
@@ -1557,7 +1557,7 @@ $effect(() => {
   box-shadow: var(--settings-panel-shadow, 0 16px 40px rgb(15 15 15 / 0.12));
 }
 
-.notion-more-menu__item {
+.xeditor-more-menu__item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1573,20 +1573,20 @@ $effect(() => {
   cursor: pointer;
 }
 
-.notion-more-menu__item :deep(svg) {
+.xeditor-more-menu__item :deep(svg) {
   flex-shrink: 0;
 }
 
-.notion-more-menu__item:hover {
+.xeditor-more-menu__item:hover {
   background: var(--settings-hover, #f1f1ef);
 }
 
-.notion-more-menu__label {
+.xeditor-more-menu__label {
   font-size: 13px;
   font-weight: 600;
 }
 
-.notion-share-btn {
+.xeditor-share-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -1612,42 +1612,42 @@ $effect(() => {
   box-shadow: 0 1px 0 var(--header-glass-inset);
 }
 
-.notion-share-btn__icon {
+.xeditor-share-btn__icon {
   flex-shrink: 0;
 }
 
 /* Optical center: font metrics sit slightly high next to the icon. */
-.notion-share-btn__label {
+.xeditor-share-btn__label {
   padding-top: 3px;
   line-height: 1;
 }
 
-.notion-share-btn:hover {
+.xeditor-share-btn:hover {
   background: var(--header-share-bg-hover);
 }
 
-.notion-share-btn:active {
+.xeditor-share-btn:active {
   transform: scale(0.96);
 }
 
 @media (max-width: 640px) {
-  .notion-breadcrumb {
+  .xeditor-breadcrumb {
     max-width: min(48vw, 160px);
   }
 
-  .notion-breadcrumb__segment,
-  .notion-breadcrumb__current {
+  .xeditor-breadcrumb__segment,
+  .xeditor-breadcrumb__current {
     max-width: min(5.5rem, 28vw);
   }
 
-  .notion-share-btn {
+  .xeditor-share-btn {
     width: var(--icon-size);
     height: var(--icon-size);
     padding: 0;
     justify-content: center;
   }
 
-  .notion-share-btn__label {
+  .xeditor-share-btn__label {
     display: none;
   }
 }

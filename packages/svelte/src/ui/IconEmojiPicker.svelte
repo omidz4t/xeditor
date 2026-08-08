@@ -133,7 +133,7 @@
     if (panelEl?.contains(t)) return
     if (rootEl?.contains(t)) return
     // Page title "Add icon" / "Change icon" live outside the trigger span
-    if ((t as HTMLElement).closest?.('.notion-page-control')) return
+    if ((t as HTMLElement).closest?.('.xeditor-page-control')) return
     open = false
   }
 

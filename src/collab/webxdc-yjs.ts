@@ -759,7 +759,7 @@ export async function createCollabSession(
     getBlocks: (pageId) => getPageBlocks(collabDoc, pageId),
     getPages: () => listPages(collabDoc),
     pushBlocks: (pageId, blocks, _onlyIds) => {
-      // Realtime / chat+live: Vue-style full live write so peers see body instantly.
+      // Realtime / chat+live: full live write so peers see body instantly.
       if (currentSyncMode === 'realtime' || currentSyncMode === 'chat') {
         pushBlocksLive(pageId, blocks)
         return

@@ -824,7 +824,7 @@
   padding-top: 2px;
 }
 
-/* Notion-like toggle disclosure */
+/* block toggle disclosure */
 .ebi-toggle-row {
   padding-inline-start: 2px;
   border-radius: 6px;
@@ -870,7 +870,7 @@
   cursor: default;
 }
 
-/* Path points ▼ at 0°. Closed = sideways; open always faces down (Notion). */
+/* Path points ▼ at 0°. Closed = sideways; open always faces down (block editor). */
 .ebi-toggle__caret {
   width: 0.85em;
   height: 0.85em;
@@ -997,7 +997,7 @@
   pointer-events: auto;
 }
 
-/* Peer editing this line — soft color wash + start edge (Vue-style collab cue). */
+/* Peer editing this line — soft color wash + start edge (collab cue). */
 .ebi--peer-locked {
   box-shadow: inset 3px 0 0 0 var(--peer-lock-color, #2383e2);
   background: color-mix(in srgb, var(--peer-lock-color, #2383e2) 8%, transparent);

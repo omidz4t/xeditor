@@ -1,5 +1,5 @@
 /**
- * Block-based document model (Notion-style) used by the custom ProEditor
+ * Block-based document model used by the custom ProEditor
  * and the public docs renderer. Stored in `document.content` as:
  * { format: 'blocks', version: 1, blocks: Block[], text: string }
  */
@@ -25,7 +25,7 @@ export type BlockType =
   | 'page'
   /** Collaborative poll / voting block. */
   | 'poll'
-  /** Side-by-side column row (Notion column_list / vbox). */
+  /** Side-by-side column row (column_list / vbox). */
   | 'column_list'
   /** Single column slot inside a column_list. */
   | 'column'
@@ -97,7 +97,7 @@ export interface TableData {
   style?: TableStyle
   /**
    * When true, the table breaks out of the text column (page content insets /
-   * page padding) for a full-width layout — like Notion’s “full width” table.
+   * page padding) for a full-width layout — like the editor’s full-width table.
    */
   expanded?: boolean
   /** Per-column widths (index matches column). Used by the width toolbar for the selected column. */
@@ -110,7 +110,7 @@ export interface TableCellCoord {
 }
 
 export interface BlockProps {
-  /** list / to_do / toggle nesting depth (flat model, Notion-like rendering) */
+  /** list / to_do / toggle nesting depth (flat model, block rendering) */
   indent?: number
   /** to_do */
   checked?: boolean

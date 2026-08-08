@@ -2547,7 +2547,7 @@ $effect(() => {
 })
 
 /**
- * Enter / ArrowDown in the page title (Notion): ensure a body block at the
+ * Enter / ArrowDown in the page title (block editor): ensure a body block at the
  * start of the page and move focus into it.
  */
 function onTitleEnter() {
@@ -2867,7 +2867,7 @@ $effect(() => {
               </div>
               <!--
                 Peer carets/cursors above the editor so they are not covered
-                by contenteditable layers (Vue paints indicators over the page).
+                by contenteditable layers (indicators paint over the page).
               -->
               {#if !browserDemoOnly}
                 <PeerCursors
@@ -3105,7 +3105,7 @@ $effect(() => {
     max-width: none;
   }
 
-  :global(.notion-page-header) {
+  :global(.xeditor-page-header) {
     width: 100%;
     max-width: none !important;
     margin-inline: 0;
@@ -3130,7 +3130,7 @@ $effect(() => {
   max-width: none;
 }
 
-:global(html[data-phone-ui]) .notion-page-header {
+:global(html[data-phone-ui]) .xeditor-page-header {
   width: 100%;
   max-width: none !important;
   margin-inline: 0;

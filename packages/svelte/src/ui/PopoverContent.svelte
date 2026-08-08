@@ -108,7 +108,7 @@
     if (contentEl?.contains(target)) return
     if (ctx.triggerEl.current?.contains(target)) return
     // "Add icon" / "Change icon" control buttons sit outside the trigger.
-    if ((target as HTMLElement).closest?.('.notion-page-control')) return
+    if ((target as HTMLElement).closest?.('.xeditor-page-control')) return
 
     ctx.setOpen(false)
   }
