@@ -25,6 +25,13 @@
  *   # mobile-ish frame
  *   npm run screenshots -- --width 390 --height 844 --device-scale 2
  *
+ *   # full-screen desktop viewport (1920×1080), no UI crops
+ *   npm run screenshots -- --full-screen
+ *   npm run screenshots:full
+ *
+ *   # full-screen + scroll entire document height (long landing pages)
+ *   npm run screenshots -- --full-screen --full-page
+ *
  * Output
  * ──────
  *   docs/screenshots/*.jpg
@@ -38,11 +45,13 @@
  *   TARGET_KB         Soft max size per image (default: 14)
  *   HEADLESS          "false" to watch the browser
  *   NO_SERVER         "1" — never spawn Vite; require BASE_URL / open port
+ *   FULL_SCREEN       "1" — same as --full-screen
+ *   FULL_PAGE         "1" — same as --full-page
  *
  * Examples (after capture)
  * ────────────────────────
  *   ![Editor](docs/screenshots/app-editor.jpg)
- *   ![Sync setup](docs/screenshots/app-sync-local.jpg)
+ *   ![Sync setup](docs/screenshots/app-sync-setup.jpg)
  */
 
 import { spawn } from 'node:child_process'
@@ -77,8 +86,20 @@ const onlyList = String(flag('--only') || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)
-const VIEW_W = Number(flag('--width') || process.env.WIDTH || 1100)
-const VIEW_H = Number(flag('--height') || process.env.HEIGHT || 700)
+// Full-screen: desktop-class viewport, ignore stage crops (clipFrom / clip).
+const FULL_SCREEN =
+  args.includes('--full-screen')
+  || args.includes('--fullscreen')
+  || process.env.FULL_SCREEN === '1'
+// Capture entire scrollable document (tall landing pages). Implies no clip.
+const FULL_PAGE =
+  args.includes('--full-page')
+  || args.includes('--fullpage')
+  || process.env.FULL_PAGE === '1'
+const DEFAULT_W = FULL_SCREEN ? 1920 : 1100
+const DEFAULT_H = FULL_SCREEN ? 1080 : 700
+const VIEW_W = Number(flag('--width') || process.env.WIDTH || DEFAULT_W)
+const VIEW_H = Number(flag('--height') || process.env.HEIGHT || DEFAULT_H)
 const DEVICE_SCALE = Number(flag('--device-scale') || process.env.DEVICE_SCALE || 1)
 
 // ── Stages (edit / extend freely) ────────────────────────────────────────────
@@ -388,20 +409,24 @@ function sanitizeClip(clip) {
   return { x, y, width, height }
 }
 
-async function captureCompressed(page, filePath, clip) {
+async function captureCompressed(page, filePath, clip, { fullPage = false } = {}) {
+  // Full-page / full-screen shots are larger — allow a bit more budget.
+  const targetBytes =
+    (FULL_SCREEN || fullPage ? Math.max(TARGET_KB, 28) : TARGET_KB) * 1024
   const qualities = [68, 58, 48, 40, 32, 26, 20, 16]
   let best = null
-  let useClip = sanitizeClip(clip)
+  let useClip = fullPage || FULL_SCREEN ? undefined : sanitizeClip(clip)
   for (const q of qualities) {
     try {
       const buf = await page.screenshot({
         type: 'jpeg',
         quality: q,
         clip: useClip,
-        captureBeyondViewport: false,
+        fullPage: Boolean(fullPage),
+        captureBeyondViewport: Boolean(fullPage),
       })
       best = buf
-      if (buf.byteLength <= TARGET_KB * 1024) break
+      if (buf.byteLength <= targetBytes) break
     } catch (err) {
       // Bad clip (0 height / offscreen) → fall back to full viewport once
       if (useClip) {
@@ -495,10 +520,24 @@ Then re-run:
 
   const { base, appPath, child } = await ensureServer()
   console.log(`Base URL: ${base}  app: ${appPath}`)
+  if (FULL_SCREEN) {
+    console.log(`Full-screen mode: ${VIEW_W}×${VIEW_H} (no UI crops)`)
+  }
+  if (FULL_PAGE) {
+    console.log('Full-page mode: capture entire scroll height')
+  }
 
   const browser = await puppeteer.default.launch({
     headless: HEADLESS,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--font-render-hinting=none'],
+    defaultViewport: null,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--font-render-hinting=none',
+      ...(FULL_SCREEN
+        ? [`--window-size=${VIEW_W},${VIEW_H}`, '--start-maximized']
+        : []),
+    ],
   })
 
   const page = await browser.newPage()
@@ -523,6 +562,8 @@ Then re-run:
   const manifest = {
     generatedAt: new Date().toISOString(),
     base,
+    fullScreen: FULL_SCREEN,
+    fullPage: FULL_PAGE,
     viewport: { width: VIEW_W, height: VIEW_H, deviceScaleFactor: DEVICE_SCALE },
     targetKb: TARGET_KB,
     shots: [],
@@ -560,10 +601,15 @@ Then re-run:
       // Settle fonts / layout
       await sleep(250)
 
-      const file = `${stage.id}.jpg`
+      const suffix = FULL_SCREEN ? '-full' : ''
+      const file = `${stage.id}${suffix}.jpg`
       const outPath = join(OUT_DIR, file)
-      const clip = await resolveClip(page, stage)
-      const bytes = await captureCompressed(page, outPath, clip)
+      // Full-screen / full-page: skip stage crops so the whole frame is kept.
+      const clip =
+        FULL_SCREEN || FULL_PAGE ? undefined : await resolveClip(page, stage)
+      const bytes = await captureCompressed(page, outPath, clip, {
+        fullPage: FULL_PAGE,
+      })
       const kb = (bytes / 1024).toFixed(1)
       console.log(`  saved ${relative(root, outPath)} (${kb} KB)`)
       manifest.shots.push({
@@ -573,6 +619,8 @@ Then re-run:
         bytes,
         kb: Number(kb),
         url: fullUrl,
+        fullScreen: FULL_SCREEN,
+        fullPage: FULL_PAGE,
       })
     }
   } finally {
@@ -588,7 +636,7 @@ Then re-run:
   const readme = `# Screenshots
 
 Generated by \`npm run screenshots\` (Puppeteer). Target ~${TARGET_KB} KB JPEG each.
-
+${FULL_SCREEN ? '\n**Mode:** full-screen (1920×1080 viewport, no crops).\n' : ''}${FULL_PAGE ? '\n**Mode:** full-page (entire scroll height).\n' : ''}
 | Stage | File | Size |
 |-------|------|------|
 ${manifest.shots.map((s) => `| ${s.title} | \`${s.file}\` | ${s.kb} KB |`).join('\n')}
@@ -596,6 +644,13 @@ ${manifest.shots.map((s) => `| ${s.title} | \`${s.file}\` | ${s.kb} KB |`).join(
 \`\`\`bash
 # Local Vite (auto-start)
 npm run screenshots
+
+# Full-screen desktop (1920×1080, no crops)
+npm run screenshots -- --full-screen
+npm run screenshots:full
+
+# Full-screen + entire page scroll
+npm run screenshots -- --full-screen --full-page
 
 # Production Pages
 BASE_URL=https://omidz4t.github.io/xeditor npm run screenshots

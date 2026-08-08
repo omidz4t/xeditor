@@ -17,6 +17,8 @@
     "version:bump": "node scripts/bump-version.mjs",
     "version:release": "node scripts/bump-version.mjs --release",
     "screenshots": "node scripts/screenshot-app.mjs",
+    "screenshots:full": "node scripts/screenshot-app.mjs --full-screen",
+    "screenshots:full-page": "node scripts/screenshot-app.mjs --full-screen --full-page",
     "screenshots:pages": "BASE_URL=https://omidz4t.github.io/xeditor node scripts/screenshot-app.mjs"
   },
   "dependencies": {
