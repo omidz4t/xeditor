@@ -15,6 +15,16 @@ export default defineConfig(({ command }) => ({
   // Custom mock: IndexedDB for status history (stock mock used localStorage and hit quota).
   plugins: [
     svelte(),
+    // webxdc:// is not a CORS-capable origin; Vite’s default `crossorigin`
+    // attributes break module/CSS loads inside Delta Chat.
+    {
+      name: 'webxdc-strip-crossorigin',
+      transformIndexHtml(html) {
+        return html
+          .replace(/\s+crossorigin(?:="[^"]*")?/gi, '')
+          .replace(/\s+crossorigin(?=[\s>])/gi, '')
+      },
+    },
     buildXDC(),
     eruda(),
     mockWebxdc(resolve(__dirname, 'src/dev/webxdc-mock-idb.js')),
@@ -34,6 +44,9 @@ export default defineConfig(({ command }) => ({
     cssMinify: true,
     // Prefer smaller output for WebXDC packaging.
     modulePreload: false,
+    // One JS + one CSS file — multi-chunk dynamic imports 404 under webxdc://
+    // (relative ES module graph is unreliable in Delta Chat’s custom protocol).
+    cssCodeSplit: false,
     reportCompressedSize: true,
     rollupOptions: {
       treeshake: {
@@ -47,18 +60,8 @@ export default defineConfig(({ command }) => ({
         },
       },
       output: {
-        // Split rarely needed / heavy deps so the main chunk stays leaner.
-        manualChunks(id) {
-          if (id.includes('node_modules/yjs') || id.includes('node_modules/lib0')) {
-            return 'yjs'
-          }
-          if (id.includes('node_modules/fflate')) {
-            return 'fflate'
-          }
-          if (id.includes('/vim/vimEngine') || id.includes('/vim/cmdline') || id.includes('/vim/motions')) {
-            return 'vim'
-          }
-        },
+        // Single application chunk (no yjs/fflate/vim siblings).
+        inlineDynamicImports: true,
       },
     },
   },

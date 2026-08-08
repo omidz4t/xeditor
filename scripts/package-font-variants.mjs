@@ -5,6 +5,11 @@
  *   dist-xdc/editor-lite.xdc  — Regular + Bold only (woff2) for both fonts
  *
  * Also keeps dist-xdc/app.xdc as a copy of full (default build artifact).
+ *
+ * Important for Delta Chat webxdc://:
+ * - Do NOT use CSS @import chains (nested .css often arrives as text/plain and
+ *   Chromium refuses to apply them). Write one flat fonts/fonts.css with all
+ *   @font-face rules and correct relative font URLs.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -14,6 +19,7 @@ import { zipSync } from 'fflate'
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..')
 const dist = join(root, 'dist')
 const outDir = join(root, 'dist-xdc')
+const fontsRoot = join(root, 'public/fonts')
 
 if (!existsSync(dist)) {
   console.error('dist/ missing — run vite build first')
@@ -23,6 +29,8 @@ if (!existsSync(dist)) {
 /** Recursively collect files as { zipPath: Uint8Array } */
 function collectFiles(dir, base = dir, into = {}) {
   for (const name of readdirSync(dir)) {
+    // Screenshots / docs are for the site build, not the .xdc payload
+    if (name === 'screenshots') continue
     const abs = join(dir, name)
     const st = statSync(abs)
     if (st.isDirectory()) {
@@ -53,30 +61,62 @@ function deletePrefixExcept(files, prefix, keep) {
   }
 }
 
+/**
+ * Rewrite url('./File.woff2') → url('./subdir/File.woff2') so rules can live
+ * in fonts/fonts.css (one hop from HTML) without nested @import.
+ */
+function rewriteFontUrls(css, subdir) {
+  return css.replace(
+    /url\(\s*(['"]?)\.\/([^'")]+)\1\s*\)/g,
+    (_m, q, file) => `url(${q}./${subdir}/${file}${q})`,
+  )
+}
+
+function readFontCss(relPath) {
+  return readFileSync(join(fontsRoot, relPath), 'utf8')
+}
+
+/** Single stylesheet: no @import (webxdc MIME-safe). */
+function buildFlatFontsCss({ shabnamFile, aradFile, label }) {
+  const shabnam = rewriteFontUrls(readFontCss(shabnamFile), 'shabnam')
+  const arad = rewriteFontUrls(readFontCss(aradFile), 'arad')
+  return [
+    `/* ${label} — flat (no @import) for webxdc:// MIME safety */`,
+    shabnam.trim(),
+    '',
+    arad.trim(),
+    '',
+  ].join('\n')
+}
+
+function stripExtraFontCss(files) {
+  // Nested CSS is unused once fonts.css is flat; drop to shrink the package
+  // and avoid accidental @import usage.
+  deleteKeys(files, [
+    'fonts/shabnam/shabnam.css',
+    'fonts/shabnam/shabnam-full.css',
+    'fonts/shabnam/shabnam-lite.css',
+    'fonts/arad/arad.css',
+    'fonts/arad/arad-full.css',
+    'fonts/arad/arad-lite.css',
+  ])
+}
+
 /** Full package: all font weights for Shabnam + Arad. */
 function packageFull() {
   const files = collectFiles(dist)
 
-  files['fonts/shabnam/shabnam.css'] = new Uint8Array(
-    readFileSync(join(root, 'public/fonts/shabnam/shabnam-full.css')),
-  )
-  files['fonts/arad/arad.css'] = new Uint8Array(
-    readFileSync(join(root, 'public/fonts/arad/arad-full.css')),
-  )
-  // Single entry CSS used by index.html
   files['fonts/fonts.css'] = new Uint8Array(
     Buffer.from(
-      "/* Full: Shabnam + Arad (all weights) */\n@import './shabnam/shabnam.css';\n@import './arad/arad.css';\n",
+      buildFlatFontsCss({
+        shabnamFile: 'shabnam/shabnam-full.css',
+        aradFile: 'arad/arad-full.css',
+        label: 'Full: Shabnam + Arad (all weights)',
+      }),
       'utf8',
     ),
   )
-
-  deleteKeys(files, [
-    'fonts/shabnam/shabnam-full.css',
-    'fonts/shabnam/shabnam-lite.css',
-    'fonts/arad/arad-full.css',
-    'fonts/arad/arad-lite.css',
-  ])
+  stripExtraFontCss(files)
 
   mkdirSync(outDir, { recursive: true })
   zipTo(join(outDir, 'editor-full.xdc'), files)
@@ -95,7 +135,7 @@ function packageLite() {
     new Set([
       'fonts/shabnam/Shabnam.woff2',
       'fonts/shabnam/Shabnam-Bold.woff2',
-      'fonts/shabnam/shabnam.css',
+      // shabnam.css removed by strip; keep only woff2
     ]),
   )
   deletePrefixExcept(
@@ -104,30 +144,21 @@ function packageLite() {
     new Set([
       'fonts/arad/Arad-Regular.woff2',
       'fonts/arad/Arad-Bold.woff2',
-      'fonts/arad/arad.css',
       'fonts/arad/OFL.txt',
     ]),
   )
 
-  files['fonts/shabnam/shabnam.css'] = new Uint8Array(
-    readFileSync(join(root, 'public/fonts/shabnam/shabnam-lite.css')),
-  )
-  files['fonts/arad/arad.css'] = new Uint8Array(
-    readFileSync(join(root, 'public/fonts/arad/arad-lite.css')),
-  )
   files['fonts/fonts.css'] = new Uint8Array(
     Buffer.from(
-      "/* Lite: Shabnam + Arad (Regular + Bold) */\n@import './shabnam/shabnam.css';\n@import './arad/arad.css';\n",
+      buildFlatFontsCss({
+        shabnamFile: 'shabnam/shabnam-lite.css',
+        aradFile: 'arad/arad-lite.css',
+        label: 'Lite: Shabnam + Arad (Regular + Bold)',
+      }),
       'utf8',
     ),
   )
-
-  deleteKeys(files, [
-    'fonts/shabnam/shabnam-full.css',
-    'fonts/shabnam/shabnam-lite.css',
-    'fonts/arad/arad-full.css',
-    'fonts/arad/arad-lite.css',
-  ])
+  stripExtraFontCss(files)
 
   mkdirSync(outDir, { recursive: true })
   zipTo(join(outDir, 'editor-lite.xdc'), files)

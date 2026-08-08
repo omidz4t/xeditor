@@ -1,8 +1,11 @@
 # On every push to main (except automated release commits):
-#   1. Bump version (patch) + commit + tag + push
-#   2. Build editor (WebXDC) + Pages site (landing is NOT in .xdc)
-#   3. Publish .xdc files to GitHub Releases
-#   4. Deploy site to the `gh-pages` branch (GitHub Pages)
+#   1. Bump version (patch) + commit + tag + push  (bot, unsigned — no keys in CI)
+#   2. Build editor (WebXDC) + initial Pages site
+#   3. Capture product screenshots (Puppeteer against local dist-pages)
+#      → written only under dist/screenshots (NOT committed to git)
+#   4. Rebuild Pages so dist-pages/ includes those shots
+#   5. Publish .xdc files to GitHub Releases
+#   6. Deploy dist-pages to the `gh-pages` branch
 #
 # Only `main`.
 #
@@ -11,6 +14,8 @@
 #   Branch: gh-pages / (root)
 #
 # Also: Actions → General → Workflow permissions → Read and write
+#
+# Never put GPG/PGP private keys in Actions secrets for this workflow.
 
 name: Main release
 
@@ -27,7 +32,7 @@ concurrency:
 
 jobs:
   release:
-    name: Version · build · release · pages
+    name: Version · screenshots · build · release · pages
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
     steps:
@@ -48,7 +53,7 @@ jobs:
 
       - name: Configure git identity
         run: |
-          # Bot identity only — no GPG signing in CI.
+          # Version-bump commits only. Never sign in CI — signing keys stay on local machines.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config commit.gpgsign false
@@ -88,11 +93,62 @@ jobs:
           git push origin HEAD:main
           git push origin "v${{ steps.version.outputs.version }}"
 
-      - name: Build WebXDC + Pages site
+      - name: Build editor + initial Pages site
         env:
           XEDITOR_VERSION: ${{ steps.version.outputs.version }}
           XEDITOR_REPO: ${{ github.repository }}
         run: npm run build:pages
+
+      - name: Install Chromium (Puppeteer)
+        run: npx puppeteer browsers install chrome
+
+      - name: Capture product screenshots
+        env:
+          BASE_URL: http://127.0.0.1:4173
+          APP_PATH: /app/
+          # CI-only path (gitignored via dist/) — never committed
+          OUT_DIR: dist/screenshots
+          TARGET_KB: '100'
+          MIN_QUALITY: '80'
+          DEVICE_SCALE: '2'
+        run: |
+          set -euo pipefail
+          npx --yes serve dist-pages -p 4173 --no-clipboard > /tmp/serve-pages.log 2>&1 &
+          SERVE_PID=$!
+          cleanup() { kill "$SERVE_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+
+          echo "Waiting for dist-pages on :4173…"
+          for i in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/" >/dev/null 2>&1; then
+              echo "Server ready (${i}s)"
+              break
+            fi
+            if ! kill -0 "$SERVE_PID" 2>/dev/null; then
+              echo "serve exited early:" >&2
+              cat /tmp/serve-pages.log >&2 || true
+              exit 1
+            fi
+            sleep 1
+            if [ "$i" -eq 60 ]; then
+              echo "Timeout waiting for serve" >&2
+              cat /tmp/serve-pages.log >&2 || true
+              exit 1
+            fi
+          done
+
+          node scripts/screenshot-app.mjs
+
+          test -f dist/screenshots/app-editor.jpg
+          test -f dist/screenshots/app-sidebar.jpg
+          test -f dist/screenshots/manifest.json
+          ls -la dist/screenshots/*.jpg | head -40
+
+      - name: Rebuild Pages with fresh screenshots
+        env:
+          XEDITOR_VERSION: ${{ steps.version.outputs.version }}
+          XEDITOR_REPO: ${{ github.repository }}
+        run: node scripts/build-pages.mjs
 
       - name: Verify outputs
         run: |
@@ -104,11 +160,14 @@ jobs:
           test -f dist-pages/app/webxdc.js
           grep -q 'IndexedDB' dist-pages/app/webxdc.js
           test ! -f dist/webxdc.js
-          # Version must be baked into the landing page (not leftover placeholders)
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/index.html
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/versions.html
           grep -q "releases/download/v${{ steps.version.outputs.version }}/app.xdc" dist-pages/index.html
           ! grep -q '__XEDITOR_VERSION__' dist-pages/index.html
+          # Screenshots ship only in the deployed site (not as a main-branch commit)
+          test -f dist-pages/screenshots/app-editor.jpg
+          test -f dist-pages/screenshots/app-sidebar.jpg
+          test -f dist-pages/screenshots/app-comments.jpg
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
@@ -120,11 +179,11 @@ jobs:
             echo "Mock webxdc.js must not be inside .xdc (host provides it)" >&2
             exit 1
           fi
-          if grep -q 'How it works' dist/index.html; then
+          grep -qE 'XEditor|Write together' dist-pages/index.html
+          if grep -qE 'Write together|What you get' dist/index.html; then
             echo "Landing page must not replace editor dist/index.html" >&2
             exit 1
           fi
-          grep -q 'How it works' dist-pages/index.html
           echo "OK v${{ steps.version.outputs.version }}"
 
       - name: Upload CI artifacts
@@ -134,6 +193,7 @@ jobs:
           path: |
             dist-xdc/*.xdc
             dist-pages/versions.json
+            dist/screenshots/manifest.json
           if-no-files-found: error
           retention-days: 30
 
@@ -167,7 +227,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Push dist-pages/ to gh-pages branch (avoids deploy-pages queue timeouts).
       - name: Deploy GitHub Pages (gh-pages branch)
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -178,3 +237,4 @@ jobs:
           user_name: github-actions[bot]
           user_email: 41898282+github-actions[bot]@users.noreply.github.com
           enable_jekyll: false
+          full_commit_message: 'deploy: pages v${{ steps.version.outputs.version }}'

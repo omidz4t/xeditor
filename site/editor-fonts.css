@@ -1,0 +1,123 @@
+/**
+ * Same Arad + Shabnam faces as the editor (public/fonts).
+ * Paths are relative to the landing root → files live under ./app/fonts/
+ * after `build-pages` copies dist/ into dist-pages/app/.
+ */
+
+/* ── Shabnam ─────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Shabnam';
+  src:
+    url('./app/fonts/shabnam/Shabnam-Thin.woff2') format('woff2'),
+    url('./app/fonts/shabnam/Shabnam-Thin.woff') format('woff');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src:
+    url('./app/fonts/shabnam/Shabnam-Light.woff2') format('woff2'),
+    url('./app/fonts/shabnam/Shabnam-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src:
+    url('./app/fonts/shabnam/Shabnam.woff2') format('woff2'),
+    url('./app/fonts/shabnam/Shabnam.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src:
+    url('./app/fonts/shabnam/Shabnam-Medium.woff2') format('woff2'),
+    url('./app/fonts/shabnam/Shabnam-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src:
+    url('./app/fonts/shabnam/Shabnam-Bold.woff2') format('woff2'),
+    url('./app/fonts/shabnam/Shabnam-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Arad ────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Arad';
+  src: url('./app/fonts/arad/Arad-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}

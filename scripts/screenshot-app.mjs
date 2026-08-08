@@ -152,20 +152,99 @@ const STAGES = [
   },
   {
     id: 'app-editor',
-    title: 'Header + page emoji/title + block editor',
+    title: 'Block gallery — scrolled viewports (sidebar closed)',
     path: 'APP',
+    // Tall gallery: capture overlapping viewport slices while scrolling #app
+    scrollShots: true,
+    scrollOverlap: 0.18,
+    maxScrollShots: 8,
     waitFor: '.block-editor, .xeditor-topbar, .page-content',
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
+      await ensureCommentsClosed(page)
       await seedDemoContent(page)
       await ensureHeaderVisible(page)
+      await ensureSidebarClosed(page)
       await sleep(400)
     },
   },
   {
     id: 'app-editor-focus',
-    title: 'Editor with emoji header, focused body',
+    title: 'Block gallery (focused) — scrolled viewports',
+    path: 'APP',
+    scrollShots: true,
+    scrollOverlap: 0.18,
+    maxScrollShots: 8,
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await ensureHeaderVisible(page)
+      await page.evaluate(() => {
+        const ed = document.querySelector('.block-editor [contenteditable="true"]')
+        ed?.focus()
+      })
+      await ensureSidebarClosed(page)
+      await sleep(250)
+    },
+  },
+  {
+    id: 'app-sidebar',
+    title: 'Top header + page sidebar (pages list)',
+    path: 'APP',
+    // Only stage that intentionally shows the left panel
+    sidebar: 'open',
+    waitFor: '.page-sidebar--open, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await seedExtraSidebarPages(page)
+      await ensureHeaderVisible(page)
+      await ensureSidebarOpen(page)
+      await sleep(300)
+    },
+  },
+  {
+    id: 'app-command-palette',
+    title: 'Command palette (Ctrl+K / Ctrl+P)',
+    path: 'APP',
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await ensureHeaderVisible(page)
+      await ensureSidebarClosed(page)
+      await openCommandPalette(page)
+      await sleep(350)
+    },
+  },
+  {
+    id: 'app-import',
+    title: 'Import / Open-bind modal',
+    path: 'APP',
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await ensureHeaderVisible(page)
+      await openImportDialog(page)
+      // Modal is portaled — close the rail so the shot is modal-focused
+      await ensureSidebarClosed(page)
+      await sleep(350)
+    },
+  },
+  {
+    id: 'app-comments',
+    title: 'Comments panel with example threads',
     path: 'APP',
     waitFor: '.block-editor, .xeditor-topbar',
     prepare: async (page) => {
@@ -173,25 +252,11 @@ const STAGES = [
       await waitForEditor(page)
       await seedDemoContent(page)
       await ensureHeaderVisible(page)
-      await page.evaluate(() => {
-        const ed = document.querySelector('.block-editor [contenteditable="true"]')
-        ed?.focus()
-      })
-      await sleep(250)
-    },
-  },
-  {
-    id: 'app-sidebar',
-    title: 'Top header + page sidebar',
-    path: 'APP',
-    waitFor: '.page-sidebar, .xeditor-topbar',
-    prepare: async (page) => {
-      await pickLocalSyncIfNeeded(page)
-      await waitForEditor(page)
-      await seedDemoContent(page)
-      await ensureSidebarOpen(page)
-      await ensureHeaderVisible(page)
-      await sleep(300)
+      await ensureSidebarClosed(page)
+      await openCommentsPanel(page)
+      await seedDemoComments(page)
+      await dismissFloatingCommentPopover(page)
+      await sleep(350)
     },
   },
   {
@@ -202,7 +267,9 @@ const STAGES = [
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
+      await ensureCommentsClosed(page)
       await seedDemoContent(page)
+      await ensureSidebarClosed(page)
       await openSettings(page)
       await sleep(300)
     },
@@ -215,10 +282,79 @@ const STAGES = [
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await ensureSidebarClosed(page)
       await openSettings(page)
       await openSettingsTab(page, 'Sync')
       await page.waitForSelector('.settings-panel', { timeout: 8000 })
       await sleep(250)
+    },
+  },
+
+  // ── Mobile (phone frame) ──────────────────────────────────────────────────
+  {
+    id: 'mobile-editor',
+    title: 'Mobile editor (sidebar closed)',
+    path: 'APP',
+    mobile: true,
+    waitFor: '.block-editor, .xeditor-topbar, .page-content',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await ensureHeaderVisible(page)
+      await ensureSidebarClosed(page)
+      await sleep(350)
+    },
+  },
+  {
+    id: 'mobile-comments',
+    title: 'Mobile comments panel',
+    path: 'APP',
+    mobile: true,
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await seedDemoContent(page)
+      await ensureSidebarClosed(page)
+      await openCommentsPanel(page)
+      await seedDemoComments(page)
+      await dismissFloatingCommentPopover(page)
+      await sleep(350)
+    },
+  },
+  {
+    id: 'mobile-import',
+    title: 'Mobile import / Open-bind modal',
+    path: 'APP',
+    mobile: true,
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await openImportDialog(page)
+      await ensureSidebarClosed(page)
+      await sleep(350)
+    },
+  },
+  {
+    id: 'mobile-command-palette',
+    title: 'Mobile command palette (Ctrl+K)',
+    path: 'APP',
+    mobile: true,
+    waitFor: '.block-editor, .xeditor-topbar',
+    prepare: async (page) => {
+      await pickLocalSyncIfNeeded(page)
+      await waitForEditor(page)
+      await ensureCommentsClosed(page)
+      await seedDemoContent(page)
+      await ensureSidebarClosed(page)
+      await openCommandPalette(page)
+      await sleep(350)
     },
   },
 ]
@@ -255,6 +391,165 @@ async function pickLocalSyncIfNeeded(page) {
   ).catch(() => {})
 }
 
+/** Comments panel steals horizontal space and looks wrong in most marketing shots. */
+async function ensureCommentsClosed(page) {
+  const open = await page.evaluate(() => {
+    const root = document.querySelector('.comment-panel-root--open, .comment-panel-root')
+    if (root?.classList.contains('comment-panel-root--open')) return true
+    const btn = document.querySelector('button[aria-label="Comments"]')
+    return btn?.getAttribute('aria-pressed') === 'true'
+  })
+  if (!open) return
+
+  await page.evaluate(() => {
+    document.querySelector('.comment-panel__close')?.click()
+    const btn =
+      document.querySelector('button[aria-label="Comments"][aria-pressed="true"]')
+      || document.querySelector('button[aria-label*="Comment" i][aria-pressed="true"]')
+    btn?.click()
+  })
+  await sleep(200)
+}
+
+async function openCommentsPanel(page) {
+  const already = await page.evaluate(
+    () => !!document.querySelector('.comment-panel-root--open .comment-panel'),
+  )
+  if (already) return
+
+  await page.evaluate(() => {
+    const btn =
+      document.querySelector('button[aria-label="Comments"]')
+      || document.querySelector('button[title^="Comments"]')
+      || [...document.querySelectorAll('button')].find((b) =>
+        /^comments/i.test((b.getAttribute('aria-label') || b.getAttribute('title') || '').trim()),
+      )
+    btn?.click()
+  })
+  await page.waitForSelector('.comment-panel-root--open .comment-panel, .comment-panel', {
+    timeout: 8000,
+  })
+  await sleep(200)
+}
+
+/**
+ * Seed a few page comments + one reply so the panel is not empty in screenshots.
+ * Uses native value setters so Svelte bind:value picks up the draft.
+ */
+async function seedDemoComments(page) {
+  await openCommentsPanel(page)
+
+  const hasExamples = await page.evaluate(() => {
+    const text = document.querySelector('.comment-panel')?.innerText || ''
+    // Require at least two threads so we don't skip after a partial seed
+    const threads = document.querySelectorAll('.comment-thread').length
+    return threads >= 2 && /Looks great|Can we add/i.test(text)
+  })
+  if (hasExamples) return
+
+  const composerSel =
+    '#comment-panel-composer, textarea.comment-panel__input, textarea[aria-label="Write a page comment"]'
+
+  async function setInputValue(selector, text) {
+    await page.evaluate(
+      (sel, value) => {
+        const el = document.querySelector(sel)
+        if (!el) return
+        el.focus()
+        const proto = el instanceof HTMLTextAreaElement
+          ? window.HTMLTextAreaElement.prototype
+          : window.HTMLInputElement.prototype
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
+        setter?.call(el, value)
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+      },
+      selector,
+      text,
+    )
+    await sleep(60)
+  }
+
+  async function postPageComment(text) {
+    await setInputValue(composerSel, text)
+    // Click the primary Comment button (more reliable than Enter with Svelte binds)
+    const clicked = await page.evaluate(() => {
+      const btn = document.querySelector(
+        '.comment-panel__send--primary, .comment-panel__composer button.comment-panel__send',
+      )
+      if (btn && !btn.disabled) {
+        btn.click()
+        return true
+      }
+      return false
+    })
+    if (!clicked) {
+      const area = await page.$(composerSel)
+      await area?.focus()
+      await page.keyboard.press('Enter')
+    }
+    await sleep(350)
+  }
+
+  try {
+    await postPageComment('Looks great — this gallery will help new users.')
+    await postPageComment('Can we add a short note about Delta Chat sync next?')
+
+    // Reply on the newest thread (first in the list)
+    const replySel = '.comment-thread__reply-input, input[aria-label="Reply to thread"]'
+    const replyInput = await page.$(replySel)
+    if (replyInput) {
+      await replyInput.click()
+      await setInputValue(replySel, 'Agreed — I will draft that for the next pass.')
+      const sent = await page.evaluate(() => {
+        const btn = document.querySelector('.comment-thread__reply-send')
+        if (btn && !btn.disabled) {
+          btn.click()
+          return true
+        }
+        return false
+      })
+      if (!sent) {
+        await replyInput.focus()
+        await page.keyboard.press('Enter')
+      }
+      await sleep(300)
+    }
+  } catch (e) {
+    console.warn(`  warn: seedDemoComments failed: ${e.message || e}`)
+  }
+
+  await dismissFloatingCommentPopover(page)
+  await page.evaluate(() => {
+    document.querySelector('.comment-panel__list')?.scrollTo?.({ top: 0 })
+  })
+  await sleep(150)
+}
+
+/** Hide gutter / floating "Comment" card so only the side Comments panel shows. */
+async function dismissFloatingCommentPopover(page) {
+  await page.evaluate(() => {
+    // Floating CommentThread (portal) — not the side-panel threads
+    document.querySelector('.comment-thread-backdrop')?.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true }),
+    )
+    document.querySelector('.comment-thread-close')?.click()
+    // Deselect active thread in the side panel
+    document.querySelector('.comment-panel .comment-thread--active .comment-thread__body')?.click()
+  })
+  await sleep(200)
+  // If still open, click backdrop again
+  await page.evaluate(() => {
+    if (document.querySelector('.comment-thread-header')) {
+      document.querySelector('.comment-thread-close')?.click()
+      document.querySelector('.comment-thread-backdrop')?.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      )
+    }
+  })
+  await sleep(150)
+}
+
 async function waitForEditor(page) {
   await page.waitForSelector('.block-editor, .editor-container, .page-content', {
     timeout: 20000,
@@ -264,7 +559,11 @@ async function waitForEditor(page) {
 
 async function ensureHeaderVisible(page) {
   await page.evaluate(() => {
+    // App uses #app as the scroll root (html/body are overflow:hidden).
     window.scrollTo(0, 0)
+    document.querySelector('#app')?.scrollTo?.(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
     document.querySelector('.xeditor-topbar')?.scrollIntoView({ block: 'start' })
     document.querySelector('.xeditor-page-header, .page-title-shell')?.scrollIntoView({
       block: 'nearest',
@@ -273,10 +572,275 @@ async function ensureHeaderVisible(page) {
   await sleep(150)
 }
 
+/**
+ * Expand the #app scroll root so Puppeteer fullPage can see the whole document.
+ * (html/body are height:100%; overflow:hidden — only #app scrolls.)
+ */
+async function expandScrollRootForFullPage(page) {
+  await page.evaluate(() => {
+    const app = document.querySelector('#app')
+    const shell = document.querySelector('.page, .app-shell, .app-main')
+    const contentH = Math.max(
+      app?.scrollHeight || 0,
+      shell?.scrollHeight || 0,
+      document.querySelector('.block-editor')?.scrollHeight || 0,
+      800,
+    )
+    const h = Math.ceil(contentH + 48)
+    for (const el of [document.documentElement, document.body, app]) {
+      if (!el) continue
+      el.style.setProperty('height', `${h}px`, 'important')
+      el.style.setProperty('min-height', `${h}px`, 'important')
+      el.style.setProperty('max-height', 'none', 'important')
+      el.style.setProperty('overflow', 'visible', 'important')
+    }
+    if (app) app.scrollTop = 0
+    window.scrollTo(0, 0)
+  })
+  await sleep(120)
+}
+
+/** App scroll root metrics (#app; fallback document). */
+async function getAppScrollMetrics(page) {
+  return page.evaluate(() => {
+    const app = document.querySelector('#app')
+    if (app && app.scrollHeight > app.clientHeight + 8) {
+      return {
+        kind: 'app',
+        scrollTop: app.scrollTop,
+        clientHeight: app.clientHeight,
+        scrollHeight: app.scrollHeight,
+        maxScroll: Math.max(0, app.scrollHeight - app.clientHeight),
+      }
+    }
+    const se = document.scrollingElement || document.documentElement
+    return {
+      kind: 'document',
+      scrollTop: se.scrollTop,
+      clientHeight: se.clientHeight || window.innerHeight,
+      scrollHeight: se.scrollHeight,
+      maxScroll: Math.max(0, se.scrollHeight - (se.clientHeight || window.innerHeight)),
+    }
+  })
+}
+
+async function setAppScrollTop(page, y) {
+  await page.evaluate((top) => {
+    const app = document.querySelector('#app')
+    if (app && app.scrollHeight > app.clientHeight + 8) {
+      app.scrollTop = top
+    } else {
+      const se = document.scrollingElement || document.documentElement
+      se.scrollTop = top
+      window.scrollTo(0, top)
+    }
+  }, y)
+  await sleep(180)
+}
+
+/**
+ * Offsets (px) for overlapping viewport slices covering the tall demo page.
+ * First shot is always y=0 (header + title). Last shot reaches the bottom.
+ */
+function computeScrollOffsets(metrics, { overlap = 0.18, maxShots = 8 } = {}) {
+  const view = Math.max(200, metrics.clientHeight || VIEW_H)
+  const maxScroll = Math.max(0, metrics.maxScroll || 0)
+  if (maxScroll < 40) return [0]
+
+  const step = Math.max(120, Math.round(view * (1 - Math.min(0.45, Math.max(0, overlap)))))
+  const offsets = []
+  let y = 0
+  while (y < maxScroll - 8 && offsets.length < maxShots - 1) {
+    offsets.push(y)
+    y += step
+  }
+  // Always include the bottom
+  const bottom = maxScroll
+  if (!offsets.length || offsets[offsets.length - 1] < bottom - 24) {
+    offsets.push(bottom)
+  } else {
+    offsets[offsets.length - 1] = bottom
+  }
+  // Cap length
+  if (offsets.length > maxShots) {
+    const trimmed = [offsets[0]]
+    const mid = offsets.slice(1, -1)
+    const take = maxShots - 2
+    for (let i = 0; i < take; i++) {
+      const idx = Math.round((i + 1) * (mid.length + 1) / (take + 1)) - 1
+      if (mid[idx] != null) trimmed.push(mid[idx])
+    }
+    trimmed.push(bottom)
+    return [...new Set(trimmed)].sort((a, b) => a - b)
+  }
+  return offsets
+}
+
+/** Small placeholder image so the gallery image block is not huge. */
+const DEMO_IMAGE_DATA_URL =
+  'data:image/svg+xml,'
+  + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">'
+    + '<rect width="280" height="120" rx="12" fill="#e8f0fe"/>'
+    + '<rect x="24" y="28" width="64" height="64" rx="10" fill="#aecbfa"/>'
+    + '<text x="108" y="58" font-family="system-ui,sans-serif" font-size="16" fill="#174ea6">Image block</text>'
+    + '<text x="108" y="82" font-family="system-ui,sans-serif" font-size="13" fill="#5f6368">caption example</text>'
+    + '</svg>',
+  )
+
+/** Demo markdown covering every type the paste pipeline understands. */
+function buildBlockGalleryMarkdown() {
+  return [
+    '✨ Welcome to XEditor — **block gallery**',
+    '',
+    'A collaborative block editor for Delta Chat. Below is one example of each block type.',
+    '',
+    '# Heading 1',
+    '## Heading 2',
+    '### Heading 3',
+    '#### Heading 4',
+    '##### Heading 5',
+    '###### Heading 6',
+    '',
+    'Paragraph with **bold**, *italic*, ~~strike~~, `inline code`, and a [link](https://delta.chat).',
+    '',
+    '- Bulleted list item one',
+    '- Bulleted list item two',
+    '',
+    '1. Numbered list item one',
+    '2. Numbered list item two',
+    '',
+    '- [x] Done: ship .xdc packages',
+    '- [ ] Todo: invite collaborators',
+    '',
+    '> Quote — capture something worth remembering.',
+    '',
+    '```javascript',
+    'function hello(name) {',
+    '  return `Hello, ${name}!`',
+    '}',
+    '```',
+    '',
+    '---',
+    '',
+    '| Feature | Status | Notes |',
+    '| --- | --- | --- |',
+    '| Realtime sync | ✅ | Delta Chat webxdc |',
+    '| Local mode | ✅ | IndexedDB |',
+    '| Comments | ✅ | Per page |',
+    '',
+    `![Image block](${DEMO_IMAGE_DATA_URL})`,
+    '',
+    'End of markdown-backed blocks — slash blocks follow.',
+    '',
+  ].join('\n')
+}
+
+async function focusEditor(page) {
+  await page.evaluate(() => {
+    const ed =
+      document.querySelector('.block-editor [contenteditable="true"]')
+      || document.querySelector('.block-editor')
+    ed?.focus?.()
+  })
+  await sleep(80)
+}
+
+/** Grant clipboard write so navigator.clipboard works in headless Chromium. */
+async function grantClipboard(page) {
+  try {
+    const origin = await page.evaluate(() => window.location.origin)
+    const client = await page.createCDPSession()
+    await client.send('Browser.grantPermissions', {
+      origin,
+      permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'],
+    })
+  } catch {
+    try {
+      const origin = await page.evaluate(() => window.location.origin)
+      await page.browserContext().overridePermissions(origin, [
+        'clipboard-read',
+        'clipboard-write',
+      ])
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Paste markdown into the editor (clipboard + Ctrl+V).
+ * Note: Ctrl+A then paste on an empty selection can wipe content — seed a
+ * character first so the editor has a real selection target.
+ */
+async function pasteIntoEditor(page, text) {
+  await grantClipboard(page)
+  await focusEditor(page)
+
+  // Ensure there is something to replace
+  await page.keyboard.type('x', { delay: 10 })
+  await sleep(40)
+  await page.keyboard.down('Control')
+  await page.keyboard.press('KeyA')
+  await page.keyboard.up('Control')
+  await sleep(60)
+
+  let usedClipboard = false
+  try {
+    await page.evaluate(async (md) => {
+      await navigator.clipboard.writeText(md)
+    }, text)
+    usedClipboard = true
+  } catch (e) {
+    console.warn(`  warn: clipboard.writeText failed: ${e.message || e}`)
+  }
+
+  if (usedClipboard) {
+    await page.keyboard.down('Control')
+    await page.keyboard.press('KeyV')
+    await page.keyboard.up('Control')
+    await sleep(700)
+  }
+
+  // Verify markdown structure landed
+  const ok = await page.evaluate(() => {
+    const t = document.querySelector('.block-editor')?.innerText || ''
+    return /Heading 1/i.test(t) && /bullet/i.test(t)
+  })
+  if (!ok) {
+    console.warn('  warn: markdown paste did not produce gallery blocks')
+  }
+  return ok
+}
+
+/**
+ * Insert a block via `/` menu. Types query, confirms first match, optional body text.
+ */
+async function insertSlashBlock(page, query, bodyText = '') {
+  // Assume caret is already where we want the new block
+  await page.keyboard.press('Enter')
+  await sleep(60)
+  await page.keyboard.type('/', { delay: 20 })
+  await page.keyboard.type(query, { delay: 25 })
+  await sleep(280)
+  await page.keyboard.press('Enter')
+  await sleep(220)
+  if (bodyText) {
+    await page.keyboard.type(bodyText, { delay: 12 })
+  }
+  await sleep(120)
+}
+
 async function seedDemoContent(page) {
   const already = await page.evaluate(() => {
     const t = document.querySelector('.block-editor')?.innerText || ''
-    return t.includes('Welcome to XEditor')
+    // Require the markdown gallery markers, not only the title line
+    return (
+      /block gallery/i.test(t)
+      && /Heading 1/i.test(t)
+      && /Bulleted list item/i.test(t)
+      && /Feature/i.test(t)
+    )
   })
   if (already) {
     await ensurePageEmojiAndTitle(page)
@@ -285,29 +849,114 @@ async function seedDemoContent(page) {
 
   await ensurePageEmojiAndTitle(page)
 
-  await page.evaluate(() => {
-    const editable = document.querySelector('.block-editor [contenteditable="true"]')
-    editable?.focus()
-  })
+  const md = buildBlockGalleryMarkdown()
 
   try {
-    // Rich demo body with emoji so shots aren't plain text
-    await page.keyboard.type('✨ Welcome to XEditor', { delay: 12 })
-    await page.keyboard.press('Enter')
-    await page.keyboard.type(
-      'A collaborative block editor for Delta Chat — pages, comments, and more.',
-      { delay: 6 },
-    )
-    await page.keyboard.press('Enter')
-    await page.keyboard.type('📝 Local mode stores data in IndexedDB', { delay: 5 })
-    await page.keyboard.press('Enter')
-    await page.keyboard.type('📦 Export packages as .xdc for chat', { delay: 5 })
-    await page.keyboard.press('Enter')
-    await page.keyboard.type('🚀 Try slash commands and formatting shortcuts', { delay: 5 })
-  } catch {
-    // ignore interaction failures on constrained builds
+    await pasteIntoEditor(page, md)
+  } catch (e) {
+    console.warn(`  warn: paste gallery failed: ${e.message || e}`)
   }
+
+  // Types markdown cannot express — append via slash menu after the trailing marker line
+  try {
+    // Focus the last contenteditable paragraph (not a table cell)
+    await page.evaluate(() => {
+      const editables = [
+        ...document.querySelectorAll(
+          '.block-editor [contenteditable="true"]:not(td [contenteditable]):not(th [contenteditable])',
+        ),
+      ]
+      // Prefer the marker line we pasted
+      const marker = editables.find((el) =>
+        /slash blocks follow|End of markdown/i.test(el.textContent || ''),
+      )
+      const last = marker || editables[editables.length - 1]
+      if (!last) return
+      last.focus()
+      const sel = window.getSelection()
+      if (sel) {
+        const range = document.createRange()
+        range.selectNodeContents(last)
+        range.collapse(false)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+      last.scrollIntoView({ block: 'center' })
+    })
+    await sleep(150)
+    await page.keyboard.press('Enter')
+    await insertSlashBlock(page, 'toggle', 'Toggle — click to expand nested notes')
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('Tab')
+    await page.keyboard.type('Hidden detail inside the toggle', { delay: 10 })
+    await page.keyboard.press('Enter')
+    await page.keyboard.down('Shift')
+    await page.keyboard.press('Tab')
+    await page.keyboard.up('Shift')
+    await insertSlashBlock(page, 'callout', 'Callout — highlighted tip for readers')
+    await page.keyboard.press('Enter')
+    await insertSlashBlock(page, 'poll')
+    await sleep(250)
+    const pollInputs = await page.$$(
+      'input[placeholder*="question" i], input[placeholder*="Option" i], .editor-poll input, [class*="poll"] input',
+    )
+    if (pollInputs.length) {
+      for (let i = 0; i < Math.min(pollInputs.length, 3); i++) {
+        const labels = ['Preferred sync mode?', 'Realtime sync', 'Local only']
+        await pollInputs[i].click({ clickCount: 3 })
+        await page.keyboard.type(labels[i] || `Option ${i}`, { delay: 6 })
+      }
+    }
+  } catch (e) {
+    console.warn(`  warn: slash gallery inserts failed: ${e.message || e}`)
+  }
+
+  // Blur menus without Escape (Escape closes the left sidebar)
+  await page.evaluate(() => document.activeElement?.blur?.())
+  await sleep(200)
   await ensureHeaderVisible(page)
+  await sleep(200)
+}
+
+/** Add a couple of named pages so the left panel looks populated. */
+async function seedExtraSidebarPages(page) {
+  const count = await page.evaluate(
+    () => document.querySelectorAll('.page-sidebar__item').length,
+  )
+  if (count >= 3) return
+
+  for (const title of ['Meeting notes', 'Ideas']) {
+    const before = await page.evaluate(
+      () => document.querySelectorAll('.page-sidebar__item').length,
+    )
+    await page.evaluate(() => {
+      document.querySelector('.page-sidebar__new')?.click()
+    })
+    await sleep(400)
+    const after = await page.evaluate(
+      () => document.querySelectorAll('.page-sidebar__item').length,
+    )
+    if (after <= before) break
+    // Rename the newly selected page via title input
+    try {
+      const titleEl = await page.$(
+        '.xeditor-page-title-input, .page-title-shell input[type="text"]',
+      )
+      if (titleEl) {
+        await titleEl.click({ clickCount: 3 })
+        await page.keyboard.type(title, { delay: 8 })
+        await page.evaluate(() => document.activeElement?.blur?.())
+      }
+    } catch {
+      /* ignore */
+    }
+    await sleep(200)
+  }
+
+  // Select first page again for a consistent main view
+  await page.evaluate(() => {
+    document.querySelector('.page-sidebar__item-button')?.click()
+  })
   await sleep(250)
 }
 
@@ -329,8 +978,11 @@ async function ensurePageEmojiAndTitle(page) {
     const titleEl = await page.$(titleSel)
     if (titleEl) {
       await titleEl.click({ clickCount: 3 })
-      await page.keyboard.type('📚 Product notes', { delay: 15 })
-      await page.keyboard.press('Escape')
+      await page.keyboard.type('Product notes', { delay: 15 })
+      // Blur title without Escape — Escape dismisses the left sidebar UI layer.
+      await page.evaluate(() => {
+        document.activeElement?.blur?.()
+      })
     }
   } catch {
     // ignore
@@ -383,8 +1035,11 @@ async function ensurePageEmojiAndTitle(page) {
       return false
     })
     if (!picked) {
-      // Close any open popover with Escape
-      await page.keyboard.press('Escape')
+      // Close icon picker only (avoid bare Escape which also closes the sidebar)
+      await page.evaluate(() => {
+        document.querySelector('.xpe-icon-popover button[aria-label*="close" i]')?.click()
+        document.activeElement?.blur?.()
+      })
     }
     await sleep(200)
   }
@@ -393,26 +1048,310 @@ async function ensurePageEmojiAndTitle(page) {
   await ensureHeaderVisible(page)
 }
 
-async function ensureSidebarOpen(page) {
-  const open = await page.evaluate(() => {
+/**
+ * Desktop sidebar collapses with width:0 when closed (not only translateX).
+ * Escape also closes it via the UI-layer stack — always open last after seeding.
+ */
+async function sidebarIsVisiblyOpen(page) {
+  return page.evaluate(() => {
     const sb = document.querySelector('.page-sidebar')
     if (!sb) return false
-    // open class or visible width
-    return (
-      sb.classList.contains('page-sidebar--open')
-      || sb.getAttribute('data-open') === 'true'
-      || sb.getBoundingClientRect().width > 120
-    )
+    // Prefer the open class; also accept expanded geometry if class lags a frame.
+    const r = sb.getBoundingClientRect()
+    const wideEnough = r.width > 120 && r.left >= -8 && r.left < 40
+    return sb.classList.contains('page-sidebar--open') && wideEnough
   })
-  if (open) return
-  // Click sidebar toggle in topbar
+}
+
+async function clickSidebarToggle(page) {
+  const btn =
+    (await page.$('button[aria-label="Toggle sidebar"]'))
+    || (await page.$('.xeditor-topbar__island--left button.xeditor-icon-btn'))
+    || (await page.$('.xeditor-topbar__island--left button'))
+  if (btn) {
+    await btn.click({ delay: 15 })
+    return true
+  }
   await page.evaluate(() => {
-    const btn =
-      document.querySelector('[aria-label*="sidebar" i]')
-      || document.querySelector('.xeditor-topbar__island--left button')
-    btn?.click()
+    document
+      .querySelector('button[aria-label="Toggle sidebar"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }))
   })
-  await sleep(300)
+  return true
+}
+
+async function ensureSidebarOpen(page) {
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem('collab-editor-sidebar', 'open')
+    } catch {
+      /* ignore */
+    }
+  })
+
+  if (await sidebarIsVisiblyOpen(page)) return
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (await sidebarIsVisiblyOpen(page)) return
+
+    const btn =
+      (await page.$('button[aria-label="Toggle sidebar"]'))
+      || (await page.$('.xeditor-topbar__island--left button.xeditor-icon-btn'))
+      || (await page.$('.xeditor-topbar__island--left button'))
+
+    if (btn) {
+      const pressed = await page.evaluate(
+        (el) => el.getAttribute('aria-pressed') === 'true',
+        btn,
+      )
+      if (!pressed) {
+        await btn.click({ delay: 20 })
+        await sleep(400)
+        continue
+      }
+    } else {
+      await clickSidebarToggle(page)
+      await sleep(400)
+    }
+  }
+
+  if (!(await sidebarIsVisiblyOpen(page))) {
+    await page.evaluate(() => {
+      const sb = document.querySelector('.page-sidebar')
+      if (!sb) return
+      sb.classList.add('page-sidebar--open')
+      sb.style.width = 'var(--sidebar-width)'
+      sb.style.minWidth = 'var(--sidebar-width)'
+      sb.style.opacity = '1'
+      sb.style.pointerEvents = 'auto'
+      sb.style.transform = 'none'
+      sb.style.borderRightWidth = '1px'
+      sb.style.overflow = 'hidden'
+    })
+    await sleep(250)
+  }
+
+  if (!(await sidebarIsVisiblyOpen(page))) {
+    console.warn('  warn: left sidebar still not visible after toggle')
+  }
+}
+
+/** Prefer a closed left rail for most marketing shots (full editor width). */
+async function ensureSidebarClosed(page) {
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem('collab-editor-sidebar', 'closed')
+    } catch {
+      /* ignore */
+    }
+  })
+
+  if (!(await sidebarIsVisiblyOpen(page))) {
+    // Clear any forced open styles from a prior stage
+    await page.evaluate(() => {
+      const sb = document.querySelector('.page-sidebar')
+      if (!sb) return
+      sb.classList.remove('page-sidebar--open')
+      sb.style.removeProperty('width')
+      sb.style.removeProperty('min-width')
+      sb.style.removeProperty('opacity')
+      sb.style.removeProperty('pointer-events')
+      sb.style.removeProperty('transform')
+      sb.style.removeProperty('border-right-width')
+      sb.style.removeProperty('overflow')
+    })
+    return
+  }
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (!(await sidebarIsVisiblyOpen(page))) return
+    const btn =
+      (await page.$('button[aria-label="Toggle sidebar"]'))
+      || (await page.$('.xeditor-topbar__island--left button.xeditor-icon-btn'))
+    if (btn) {
+      const pressed = await page.evaluate(
+        (el) => el.getAttribute('aria-pressed') === 'true',
+        btn,
+      )
+      if (pressed) {
+        await btn.click({ delay: 20 })
+        await sleep(350)
+        continue
+      }
+    }
+    await clickSidebarToggle(page)
+    await sleep(350)
+  }
+
+  if (await sidebarIsVisiblyOpen(page)) {
+    await page.evaluate(() => {
+      const sb = document.querySelector('.page-sidebar')
+      if (!sb) return
+      sb.classList.remove('page-sidebar--open')
+      sb.style.width = '0'
+      sb.style.minWidth = '0'
+      sb.style.opacity = '0'
+      sb.style.pointerEvents = 'none'
+      sb.style.borderRightWidth = '0'
+    })
+    await sleep(200)
+  }
+}
+
+/** Force real phone chrome (data-phone-ui), not just a narrow desktop viewport. */
+async function applyPhoneUiMode(page, enabled) {
+  // CDP only supports a few media features (not pointer/hover).
+  await page.emulateMediaFeatures([
+    { name: 'prefers-color-scheme', value: 'light' },
+  ])
+  await page.evaluate((on) => {
+    if (on) {
+      document.documentElement.setAttribute('data-phone-ui', '1')
+      // Match tokens used under phone UI (see src/style.css)
+      document.documentElement.style.setProperty('--page-width', '100%')
+      document.documentElement.style.setProperty('--page-padding-x', '16px')
+      document.documentElement.style.setProperty('--page-content-inset-start', '8px')
+      document.documentElement.style.setProperty('--page-content-inset-end', '8px')
+    } else {
+      document.documentElement.removeAttribute('data-phone-ui')
+      document.documentElement.style.removeProperty('--page-width')
+      document.documentElement.style.removeProperty('--page-padding-x')
+      document.documentElement.style.removeProperty('--page-content-inset-start')
+      document.documentElement.style.removeProperty('--page-content-inset-end')
+    }
+    window.dispatchEvent(new Event('resize'))
+  }, enabled)
+  await sleep(150)
+}
+
+async function applyStageViewport(page, stage) {
+  // Note: isMobile/hasTouch can force a reload that hangs under Vite HMR —
+  // only change width/height/DPR for phone frames.
+  if (stage.mobile) {
+    const w = Number(stage.width || 390)
+    const h = Number(stage.height || 844)
+    const dpr = Number(stage.deviceScale || Math.min(DEVICE_SCALE, 3))
+    await page.setViewport({
+      width: w,
+      height: h,
+      deviceScaleFactor: dpr,
+    })
+    await applyPhoneUiMode(page, true)
+    return { width: w, height: h, deviceScaleFactor: dpr, mobile: true }
+  }
+  await page.setViewport({
+    width: VIEW_W,
+    height: VIEW_H,
+    deviceScaleFactor: DEVICE_SCALE,
+  })
+  await applyPhoneUiMode(page, false)
+  return {
+    width: VIEW_W,
+    height: VIEW_H,
+    deviceScaleFactor: DEVICE_SCALE,
+    mobile: false,
+  }
+}
+
+/** Open the sidebar Import / “Open / bind” dialog. */
+async function openImportDialog(page) {
+  if (await page.$('.import-panel, .import-root')) return
+
+  // Import lives on the left rail — open briefly if needed
+  const railOpen = await sidebarIsVisiblyOpen(page)
+  if (!railOpen) await ensureSidebarOpen(page)
+
+  const opened = await page.evaluate(() => {
+    const sidebarImport =
+      document.querySelector('.page-sidebar__import')
+      || [...document.querySelectorAll('.page-sidebar button, .page-sidebar__nav button')].find(
+        (b) => /^import$/i.test((b.textContent || '').trim()),
+      )
+    if (sidebarImport) {
+      sidebarImport.click()
+      return 'sidebar'
+    }
+    const any = [...document.querySelectorAll('button')].find((b) =>
+      /import|open\s*\/\s*bind/i.test(
+        `${b.textContent || ''} ${b.getAttribute('aria-label') || ''}`,
+      ),
+    )
+    if (any) {
+      any.click()
+      return 'button'
+    }
+    return null
+  })
+
+  if (!opened) {
+    await page.keyboard.down('Control')
+    await page.keyboard.press('KeyK')
+    await page.keyboard.up('Control')
+    await sleep(200)
+    await page.keyboard.type('import', { delay: 20 })
+    await sleep(200)
+    await page.keyboard.press('Enter')
+    await sleep(250)
+  }
+
+  await page.waitForSelector('.import-panel, .import-root', { timeout: 8000 })
+  await page.evaluate(() => {
+    document.querySelector('.import-panel')?.scrollIntoView({ block: 'center' })
+  })
+  await sleep(150)
+}
+
+/** Open the app command palette (Ctrl/Cmd+K). */
+async function openCommandPalette(page) {
+  if (await page.$('.palette-panel, .palette-root')) return
+
+  // Ensure editor chrome has focus (not a floating input)
+  await page.evaluate(() => {
+    document.querySelector('.block-editor')?.focus?.()
+    document.activeElement?.blur?.()
+  })
+  await sleep(80)
+
+  // Ctrl+K (same chord as the app; also works as Ctrl+P fallback below)
+  await page.keyboard.down('Control')
+  await page.keyboard.press('KeyK')
+  await page.keyboard.up('Control')
+  await sleep(250)
+
+  let opened = await page.$('.palette-panel, .palette-root, .palette-input')
+  if (!opened) {
+    await page.keyboard.down('Control')
+    await page.keyboard.press('KeyP')
+    await page.keyboard.up('Control')
+    await sleep(250)
+    opened = await page.$('.palette-panel, .palette-root, .palette-input')
+  }
+
+  if (!opened) {
+    // Last resort: dispatch the same keydown the app listens for
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'k',
+          code: 'KeyK',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await sleep(250)
+  }
+
+  await page.waitForSelector('.palette-panel, .palette-root', { timeout: 8000 })
+
+  // Optional: type a short query so the list shows filtered commands (still open)
+  const input = await page.$('.palette-input, .palette-panel input')
+  if (input) {
+    await input.click({ clickCount: 1 })
+    // Leave empty to show the default command list (pages + actions)
+    await sleep(100)
+  }
 }
 
 async function openSettings(page) {
@@ -580,6 +1519,21 @@ async function waitForUrl(url, timeoutMs = 60000) {
   throw new Error(`Timeout waiting for ${url}`)
 }
 
+/** Only reuse a process on the port if it actually serves this app. */
+async function isXEditorServer(url) {
+  try {
+    const res = await fetch(url, { method: 'GET' })
+    if (!(res.ok || res.status === 304)) return false
+    const html = await res.text()
+    return (
+      /XEditor|collab-markdown|webxdc\.js|block-editor|src\/main\.ts/i.test(html)
+      && !/fakeshell|FakeShell/i.test(html)
+    )
+  } catch {
+    return false
+  }
+}
+
 async function ensureServer() {
   if (process.env.BASE_URL) {
     const base = process.env.BASE_URL.replace(/\/$/, '')
@@ -590,17 +1544,25 @@ async function ensureServer() {
     return { base, appPath, child: null }
   }
 
-  const port = process.env.VITE_DEV_PORT || '5173'
-  const base = `http://127.0.0.1:${port}`
-  // Probe existing server
+  let port = process.env.VITE_DEV_PORT || '5173'
+  let base = `http://127.0.0.1:${port}`
+
+  // Probe existing server — reject foreign apps on the same port (common on 5173).
+  if (await isXEditorServer(base)) {
+    console.log(`Using existing XEditor server at ${base}`)
+    return { base, appPath: process.env.APP_PATH || '/', child: null }
+  }
+
+  // If something else is on the default port, pick a free high port for Vite.
   try {
-    const res = await fetch(base)
-    if (res.ok) {
-      console.log(`Using existing server at ${base}`)
-      return { base, appPath: process.env.APP_PATH || '/', child: null }
+    const res = await fetch(base, { method: 'GET' })
+    if (res.ok || res.status === 304) {
+      port = process.env.VITE_DEV_PORT || String(5200 + Math.floor(Math.random() * 200))
+      base = `http://127.0.0.1:${port}`
+      console.log(`Port ${process.env.VITE_DEV_PORT || '5173'} is not XEditor; starting Vite on ${port}`)
     }
   } catch {
-    // start vite
+    // nothing listening — start on preferred port
   }
 
   if (process.env.NO_SERVER === '1') {
@@ -616,7 +1578,63 @@ async function ensureServer() {
   child.stdout?.on('data', () => {})
   child.stderr?.on('data', () => {})
   await waitForUrl(base)
+  if (!(await isXEditorServer(base))) {
+    child.kill('SIGTERM')
+    throw new Error(`Started server at ${base} but response is not XEditor`)
+  }
   return { base, appPath: process.env.APP_PATH || '/', child }
+}
+
+/** Fail (or warn) if we captured the wrong product UI. */
+async function assertAppChrome(page, stageId) {
+  if (!String(stageId).startsWith('app-')) return
+
+  // Wait until the app is past the bare "Loading…" shell.
+  try {
+    await page.waitForFunction(
+      () => {
+        if (document.querySelector('.sync-setup-panel')) return true
+        if (
+          document.querySelector('.block-editor')
+          && document.querySelector('.xeditor-topbar')
+        ) {
+          return true
+        }
+        // Still only the loading placeholder
+        const text = document.body?.innerText || ''
+        if (/^Loading/i.test(text.trim()) || text.includes('Loading…')) {
+          const onlyLoading =
+            !document.querySelector('.block-editor')
+            && !document.querySelector('.sync-setup-panel')
+          return !onlyLoading && !!document.querySelector('.xeditor-topbar')
+        }
+        return false
+      },
+      { timeout: 30000 },
+    )
+  } catch {
+    /* fall through to final check */
+  }
+
+  const info = await page.evaluate(() => {
+    const hasEditor = !!document.querySelector(
+      '.block-editor, .xeditor-topbar, .page-sidebar, .sync-setup-panel',
+    )
+    const title = document.title || ''
+    const body = document.body?.innerText?.slice(0, 400) || ''
+    const stuckLoading =
+      /Loading…/.test(body)
+      && !document.querySelector('.block-editor')
+      && !document.querySelector('.sync-setup-panel')
+    const foreign =
+      /FakeShell|fakeshell/i.test(title) || /FakeShell|fakeshell/i.test(body)
+    return { hasEditor, foreign, stuckLoading, title, body: body.slice(0, 120) }
+  })
+  if (!info.hasEditor || info.foreign || info.stuckLoading) {
+    throw new Error(
+      `Stage ${stageId}: page is not XEditor app chrome (title=${JSON.stringify(info.title)} body=${JSON.stringify(info.body)})`,
+    )
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -672,6 +1690,26 @@ Then re-run:
   // Prefer light UI for consistent marketing shots
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'light' }])
 
+  // Prefer closed sidebar + light theme (open only for app-sidebar stage).
+  await page.evaluateOnNewDocument(() => {
+    try {
+      localStorage.setItem('collab-editor-sidebar', 'closed')
+      localStorage.setItem('collab-editor-theme', 'light')
+    } catch {
+      /* ignore */
+    }
+  })
+
+  // Clipboard for markdown paste into the block editor
+  try {
+    await page.browserContext().overridePermissions(base.replace(/\/$/, ''), [
+      'clipboard-read',
+      'clipboard-write',
+    ])
+  } catch {
+    /* CDP grant is retried per paste */
+  }
+
   const stages = onlyList.length
     ? STAGES.filter((s) => onlyList.includes(s.id))
     : STAGES
@@ -691,26 +1729,71 @@ Then re-run:
     shots: [],
   }
 
+  /** Avoid reloading the SPA for every app stage (goto often hangs under Vite HMR). */
+  let lastAppUrl = null
+  let lastMobile = null
+
   try {
     for (const stage of stages) {
-      const pathPart = stage.path === 'APP' ? appPath : stage.path
-      const url = new URL(pathPart.replace(/^\//, './'), base.endsWith('/') ? base : `${base}/`).href
-        .replace(/\/\.\/?/, '/')
-
       // Normalize: base + path
       const fullUrl =
         stage.path === 'APP'
           ? `${base.replace(/\/$/, '')}${appPath.startsWith('/') ? appPath : `/${appPath}`}`
           : `${base.replace(/\/$/, '')}${stage.path.startsWith('/') ? stage.path : `/${stage.path}`}`
 
+      const vp = await applyStageViewport(page, stage)
       console.log(`\n→ ${stage.id}: ${stage.title}`)
-      console.log(`  ${fullUrl}`)
+      console.log(`  ${fullUrl}${vp.mobile ? `  [mobile ${vp.width}×${vp.height}]` : ''}`)
 
-      await page.goto(fullUrl, { waitUntil: 'networkidle2', timeout: 60000 })
+      // Always reload for first-open / sync modal so we don't stick on "Loading…"
+      // after a prior stage left the app mid-setup. Reload on mobile switch too.
+      const needNav =
+        stage.path !== 'APP'
+        || lastAppUrl !== fullUrl
+        || stage.id === 'app-sync-setup'
+        || stage.id === 'app-editor'
+        // Reload when switching desktop ↔ mobile viewport (not every mobile stage)
+        || lastMobile !== Boolean(stage.mobile)
+
+      if (needNav) {
+        // Vite HMR / IDB can prevent a clean 'load'/'networkidle' lifecycle.
+        await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 45000 })
+        if (stage.path === 'APP') lastAppUrl = fullUrl
+        lastMobile = Boolean(stage.mobile)
+      } else {
+        // Dismiss overlays that leak between stages
+        await page.evaluate(() => {
+          document.querySelector('.settings-panel [aria-label="Close"], .settings-panel button.close')?.click()
+          document.querySelector('.import-close, .import-backdrop')?.click()
+          document.querySelector('.palette-backdrop, .palette-root button[aria-label="Close"]')?.click()
+        })
+        await page.keyboard.press('Escape').catch(() => {})
+        await sleep(150)
+      }
+
+      // Re-apply after navigation (SPA boot may clear attributes).
+      if (stage.mobile) {
+        await applyPhoneUiMode(page, true)
+      } else if (stage.path === 'APP') {
+        await applyPhoneUiMode(page, false)
+      }
+
+      // Unblock editor stages if the sync chooser is still up (e.g. after app-sync-setup).
+      if (stage.id !== 'app-sync-setup') {
+        await pickLocalSyncIfNeeded(page)
+      }
+
+      // After sync dismiss + editor paint, pin phone UI again
+      if (stage.mobile) {
+        await applyPhoneUiMode(page, true)
+      }
+
       if (stage.waitFor) {
         await page.waitForSelector(stage.waitFor, { timeout: 25000 }).catch(() => {
           console.warn(`  warn: waitFor ${stage.waitFor} timed out`)
         })
+      } else {
+        await sleep(400)
       }
       if (stage.prepare) {
         try {
@@ -721,22 +1804,93 @@ Then re-run:
       }
 
       // Settle fonts / layout
-      await sleep(250)
+      await sleep(350)
+
+      try {
+        await assertAppChrome(page, stage.id)
+      } catch (e) {
+        console.error(`  ${e.message || e}`)
+        throw e
+      }
+
+      // Sidebar policy: only app-sidebar (or sidebar:'open') keeps the rail open.
+      const wantSidebarOpen = stage.sidebar === 'open' || stage.id === 'app-sidebar'
+      const isCommentsStage = /comments/i.test(stage.id)
+      if (String(stage.id).startsWith('app-') || stage.mobile) {
+        // Don't dismiss the comments panel we just seeded for comments shots
+        if (!isCommentsStage) {
+          await ensureCommentsClosed(page).catch(() => {})
+        }
+        if (wantSidebarOpen) {
+          await ensureSidebarOpen(page)
+          if (!(await sidebarIsVisiblyOpen(page))) {
+            throw new Error(`${stage.id}: left sidebar expected open — aborting save`)
+          }
+        } else if (stage.id !== 'app-sync-setup') {
+          await ensureSidebarClosed(page)
+        }
+      }
 
       const suffix = FULL_SCREEN ? '-full' : ''
       const ext = USE_PNG ? 'png' : 'jpg'
-      const file = `${stage.id}${suffix}.${ext}`
-      const outPath = join(OUT_DIR, file)
       // Prefer full viewport (includes topbar + page header/emoji). Optional crops only if set.
       const clip =
         FULL_SCREEN || FULL_PAGE || !stage.clipFrom
           ? stage.clip
           : await resolveClip(page, stage)
+
+      // Tall demo page: multiple normal-height shots while scrolling (not one giant image).
+      if (stage.scrollShots && !FULL_PAGE) {
+        await ensureHeaderVisible(page)
+        await ensureSidebarClosed(page)
+        const metrics = await getAppScrollMetrics(page)
+        const offsets = computeScrollOffsets(metrics, {
+          overlap: stage.scrollOverlap ?? 0.18,
+          maxShots: stage.maxScrollShots ?? 8,
+        })
+        console.log(
+          `  scroll series: ${offsets.length} shot(s), maxScroll=${metrics.maxScroll}px, view=${metrics.clientHeight}px`,
+        )
+        for (let i = 0; i < offsets.length; i++) {
+          await setAppScrollTop(page, offsets[i])
+          await ensureSidebarClosed(page)
+          // Part 1 keeps the plain stage id for docs; further parts are -2, -3, …
+          const part = i === 0 ? '' : `-${i + 1}`
+          const file = `${stage.id}${part}${suffix}.${ext}`
+          const outPath = join(OUT_DIR, file)
+          const bytes = await captureCompressed(page, outPath, clip, { fullPage: false })
+          const kb = (bytes / 1024).toFixed(1)
+          console.log(`  saved ${relative(root, outPath)} (${kb} KB) [scroll ${i + 1}/${offsets.length} y=${offsets[i]}]`)
+          manifest.shots.push({
+            id: `${stage.id}${part || ''}`,
+            title: `${stage.title} (${i + 1}/${offsets.length})`,
+            file,
+            bytes,
+            kb: Number(kb),
+            url: fullUrl,
+            fullScreen: FULL_SCREEN,
+            fullPage: false,
+            mobile: Boolean(stage.mobile),
+            scrollIndex: i + 1,
+            scrollTop: offsets[i],
+          })
+        }
+        // Reset scroll for the next stage
+        await setAppScrollTop(page, 0)
+        continue
+      }
+
+      const file = `${stage.id}${suffix}.${ext}`
+      const outPath = join(OUT_DIR, file)
+      const useFullPage = FULL_PAGE || Boolean(stage.fullPage)
+      if (useFullPage) {
+        await expandScrollRootForFullPage(page)
+      }
       const bytes = await captureCompressed(page, outPath, clip, {
-        fullPage: FULL_PAGE,
+        fullPage: useFullPage,
       })
       const kb = (bytes / 1024).toFixed(1)
-      console.log(`  saved ${relative(root, outPath)} (${kb} KB)`)
+      console.log(`  saved ${relative(root, outPath)} (${kb} KB)${useFullPage ? ' [full-page]' : ''}`)
       manifest.shots.push({
         id: stage.id,
         title: stage.title,
@@ -745,7 +1899,8 @@ Then re-run:
         kb: Number(kb),
         url: fullUrl,
         fullScreen: FULL_SCREEN,
-        fullPage: FULL_PAGE,
+        fullPage: useFullPage,
+        mobile: Boolean(stage.mobile),
       })
     }
   } finally {
