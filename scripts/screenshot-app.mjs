@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Capture small UI screenshots of XEditor (landing + block editor) with Puppeteer.
+ * Capture UI screenshots of XEditor (landing + block editor) with Puppeteer.
  *
  * Goals
  * ─────
- * • Align crops with real UI chrome (topbar, sidebar, editor, dialogs)
- * • Keep each file ~8–20 KB (JPEG, modest viewport, quality ladder)
+ * • Show real chrome: top header, page title/emoji icon, sidebar, editor
+ * • Higher visual quality (default ~2× DPR, JPEG q≥80, soft size budget)
  * • Work against a running server OR auto-start `vite` for the app
  *
  * Quick start
@@ -42,7 +42,9 @@
  *   BASE_URL          Site root (default: start local Vite on 5173, app at /)
  *   APP_PATH          App path under BASE_URL (default: "" for vite, "/app/" for pages)
  *   OUT_DIR           Override output dir (default: docs/screenshots)
- *   TARGET_KB         Soft max size per image (default: 14)
+ *   TARGET_KB         Soft max size per image (default: 90 — quality-first)
+ *   MIN_QUALITY       JPEG quality floor (default: 82)
+ *   DEVICE_SCALE      DPR (default: 2 for sharper text)
  *   HEADLESS          "false" to watch the browser
  *   NO_SERVER         "1" — never spawn Vite; require BASE_URL / open port
  *   FULL_SCREEN       "1" — same as --full-screen
@@ -71,7 +73,6 @@ const root = join(fileURLToPath(new URL('.', import.meta.url)), '..')
 const OUT_DIR = process.env.OUT_DIR
   ? join(root, process.env.OUT_DIR)
   : join(root, 'docs/screenshots')
-const TARGET_KB = Number(process.env.TARGET_KB || 12)
 const HEADLESS = process.env.HEADLESS !== 'false'
 
 // ── CLI flags ────────────────────────────────────────────────────────────────
@@ -82,6 +83,11 @@ function flag(name) {
   if (i === -1) return null
   return args[i + 1] ?? true
 }
+
+// Quality-first defaults (clearer shots; still JPEG unless --png).
+const TARGET_KB = Number(process.env.TARGET_KB || flag('--target-kb') || 90)
+const MIN_QUALITY = Number(process.env.MIN_QUALITY || flag('--min-quality') || 82)
+
 const onlyList = String(flag('--only') || '')
   .split(',')
   .map((s) => s.trim())
@@ -96,11 +102,14 @@ const FULL_PAGE =
   args.includes('--full-page')
   || args.includes('--fullpage')
   || process.env.FULL_PAGE === '1'
-const DEFAULT_W = FULL_SCREEN ? 1920 : 1100
-const DEFAULT_H = FULL_SCREEN ? 1080 : 700
+// Prefer PNG (lossless UI) when --png is set
+const USE_PNG = args.includes('--png') || process.env.PNG === '1'
+const DEFAULT_W = FULL_SCREEN ? 1920 : 1280
+const DEFAULT_H = FULL_SCREEN ? 1080 : 800
 const VIEW_W = Number(flag('--width') || process.env.WIDTH || DEFAULT_W)
 const VIEW_H = Number(flag('--height') || process.env.HEIGHT || DEFAULT_H)
-const DEVICE_SCALE = Number(flag('--device-scale') || process.env.DEVICE_SCALE || 1)
+// 2× DPR makes text/emoji crisp on retina / docs embeds
+const DEVICE_SCALE = Number(flag('--device-scale') || process.env.DEVICE_SCALE || 2)
 
 // ── Stages (edit / extend freely) ────────────────────────────────────────────
 
@@ -115,12 +124,10 @@ const DEVICE_SCALE = Number(flag('--device-scale') || process.env.DEVICE_SCALE |
 const STAGES = [
   {
     id: 'landing-hero',
-    title: 'Marketing hero',
+    title: 'Marketing hero + site header',
     path: '/',
-    waitFor: '.hero h1, .brand',
-    // Clip computed from .hero element (viewport-relative) for small files
-    clipFrom: '.hero',
-    clipPad: { x: 8, y: 8, maxW: 720, maxH: 400 },
+    waitFor: '.hero h1, .brand, .site-header',
+    // Full viewport so brand header stays in frame
   },
   {
     id: 'landing-download',
@@ -133,8 +140,6 @@ const STAGES = [
       })
       await sleep(250)
     },
-    clipFrom: '#download',
-    clipPad: { x: 8, y: 8, maxW: 720, maxH: 440 },
   },
   {
     id: 'app-sync-setup',
@@ -142,60 +147,62 @@ const STAGES = [
     path: 'APP',
     waitFor: '.sync-setup-panel, .page, .xeditor-topbar, .block-editor',
     prepare: async (page) => {
-      // Dialog may already be open on first load; wait either way.
       await sleep(600)
     },
   },
   {
     id: 'app-editor',
-    title: 'Block editor main canvas',
+    title: 'Header + page emoji/title + block editor',
     path: 'APP',
     waitFor: '.block-editor, .xeditor-topbar, .page-content',
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
-      // Seed a short demo document for a richer frame
       await seedDemoContent(page)
-      await sleep(300)
+      await ensureHeaderVisible(page)
+      await sleep(400)
     },
   },
   {
     id: 'app-editor-focus',
-    title: 'Editor focused mid-document',
+    title: 'Editor with emoji header, focused body',
     path: 'APP',
-    waitFor: '.block-editor',
+    waitFor: '.block-editor, .xeditor-topbar',
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
       await seedDemoContent(page)
+      await ensureHeaderVisible(page)
       await page.evaluate(() => {
         const ed = document.querySelector('.block-editor [contenteditable="true"]')
-        ed?.scrollIntoView({ block: 'center' })
         ed?.focus()
       })
-      await sleep(200)
+      await sleep(250)
     },
   },
   {
     id: 'app-sidebar',
-    title: 'Page sidebar open',
+    title: 'Top header + page sidebar',
     path: 'APP',
     waitFor: '.page-sidebar, .xeditor-topbar',
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
+      await seedDemoContent(page)
       await ensureSidebarOpen(page)
-      await sleep(250)
+      await ensureHeaderVisible(page)
+      await sleep(300)
     },
   },
   {
     id: 'app-settings',
-    title: 'Settings dialog',
+    title: 'Settings dialog over app chrome',
     path: 'APP',
     waitFor: '.settings-panel, .xeditor-topbar',
     prepare: async (page) => {
       await pickLocalSyncIfNeeded(page)
       await waitForEditor(page)
+      await seedDemoContent(page)
       await openSettings(page)
       await sleep(300)
     },
@@ -255,37 +262,135 @@ async function waitForEditor(page) {
   await sleep(400)
 }
 
-async function seedDemoContent(page) {
-  // Type via keyboard into the first contenteditable if empty-ish
+async function ensureHeaderVisible(page) {
   await page.evaluate(() => {
-    const root = document.querySelector('.block-editor')
-    if (!root) return
-    const editable = root.querySelector('[contenteditable="true"]')
-    if (!editable) return
-    editable.focus()
+    window.scrollTo(0, 0)
+    document.querySelector('.xeditor-topbar')?.scrollIntoView({ block: 'start' })
+    document.querySelector('.xeditor-page-header, .page-title-shell')?.scrollIntoView({
+      block: 'nearest',
+    })
   })
-  // Only inject once per page session
+  await sleep(150)
+}
+
+async function seedDemoContent(page) {
   const already = await page.evaluate(() => {
     const t = document.querySelector('.block-editor')?.innerText || ''
     return t.includes('Welcome to XEditor')
   })
-  if (already) return
+  if (already) {
+    await ensurePageEmojiAndTitle(page)
+    return
+  }
 
-  // Use slash / typing if possible — fallback: title field
+  await ensurePageEmojiAndTitle(page)
+
+  await page.evaluate(() => {
+    const editable = document.querySelector('.block-editor [contenteditable="true"]')
+    editable?.focus()
+  })
+
   try {
-    await page.keyboard.type('Welcome to XEditor', { delay: 8 })
+    // Rich demo body with emoji so shots aren't plain text
+    await page.keyboard.type('✨ Welcome to XEditor', { delay: 12 })
     await page.keyboard.press('Enter')
-    await page.keyboard.type('A collaborative block editor for Delta Chat.', {
-      delay: 5,
-    })
+    await page.keyboard.type(
+      'A collaborative block editor for Delta Chat — pages, comments, and more.',
+      { delay: 6 },
+    )
     await page.keyboard.press('Enter')
-    await page.keyboard.type('- Local mode stores data in IndexedDB', { delay: 4 })
+    await page.keyboard.type('📝 Local mode stores data in IndexedDB', { delay: 5 })
     await page.keyboard.press('Enter')
-    await page.keyboard.type('- Export packages as .xdc for chat', { delay: 4 })
+    await page.keyboard.type('📦 Export packages as .xdc for chat', { delay: 5 })
+    await page.keyboard.press('Enter')
+    await page.keyboard.type('🚀 Try slash commands and formatting shortcuts', { delay: 5 })
   } catch {
     // ignore interaction failures on constrained builds
   }
-  await sleep(200)
+  await ensureHeaderVisible(page)
+  await sleep(250)
+}
+
+/** Set page title + open icon picker to place a visible emoji in the header. */
+async function ensurePageEmojiAndTitle(page) {
+  // Title input
+  await page.evaluate(() => {
+    const input = document.querySelector(
+      '.xeditor-page-title-input, input.xeditor-page-title-input, .page-title-shell input',
+    )
+    if (!input) return
+    input.focus()
+    input.value = ''
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  try {
+    const titleSel =
+      '.xeditor-page-title-input, .page-title-shell input[type="text"], .page-title-shell textarea'
+    const titleEl = await page.$(titleSel)
+    if (titleEl) {
+      await titleEl.click({ clickCount: 3 })
+      await page.keyboard.type('📚 Product notes', { delay: 15 })
+      await page.keyboard.press('Escape')
+    }
+  } catch {
+    // ignore
+  }
+
+  // Prefer "Add icon" / "Change icon" control under the title
+  const added = await page.evaluate(() => {
+    const controls = [
+      ...document.querySelectorAll(
+        '.xeditor-page-control, button.xeditor-page-control, .xeditor-page-icon',
+      ),
+    ]
+    const addIcon = controls.find((el) =>
+      /icon/i.test(el.textContent || el.getAttribute('title') || el.getAttribute('aria-label') || ''),
+    )
+    if (addIcon) {
+      addIcon.click()
+      return 'open-picker'
+    }
+    // Existing icon button
+    const iconBtn = document.querySelector('.xeditor-page-icon, .xeditor-page-icon-wrap button')
+    if (iconBtn) {
+      iconBtn.click()
+      return 'open-picker'
+    }
+    return null
+  })
+
+  if (added === 'open-picker') {
+    await sleep(350)
+    // Click first emoji cell in the picker if present
+    const picked = await page.evaluate(() => {
+      const cell =
+        document.querySelector('.xpe-icon-cell')
+        || document.querySelector('[role="listbox"] button')
+        || document.querySelector('.xpe-icon-grid button')
+      if (cell) {
+        cell.click()
+        return true
+      }
+      // Fallback: type emoji into custom input if any
+      const custom = document.querySelector('.xpe-icon-custom-input, input[placeholder*="emoji" i]')
+      if (custom) {
+        custom.focus()
+        custom.value = '📝'
+        custom.dispatchEvent(new Event('input', { bubbles: true }))
+        document.querySelector('.xpe-icon-custom-apply')?.click()
+        return true
+      }
+      return false
+    })
+    if (!picked) {
+      // Close any open popover with Escape
+      await page.keyboard.press('Escape')
+    }
+    await sleep(200)
+  }
+
+  // Scroll so topbar + page header (emoji + title) are in frame
+  await ensureHeaderVisible(page)
 }
 
 async function ensureSidebarOpen(page) {
@@ -410,12 +515,29 @@ function sanitizeClip(clip) {
 }
 
 async function captureCompressed(page, filePath, clip, { fullPage = false } = {}) {
-  // Full-page / full-screen shots are larger — allow a bit more budget.
   const targetBytes =
-    (FULL_SCREEN || fullPage ? Math.max(TARGET_KB, 28) : TARGET_KB) * 1024
-  const qualities = [68, 58, 48, 40, 32, 26, 20, 16]
+    (FULL_SCREEN || fullPage ? Math.max(TARGET_KB, 120) : TARGET_KB) * 1024
+  // High quality first; only step down toward MIN_QUALITY if over budget
+  const qualities = [94, 90, 88, 86, 84, 82, 80, 78]
+    .filter((q) => q >= MIN_QUALITY)
+  if (!qualities.includes(MIN_QUALITY)) qualities.push(MIN_QUALITY)
+
   let best = null
+  // Prefer full frame (header + emoji + editor). Only crop if stage asked and not full modes.
   let useClip = fullPage || FULL_SCREEN ? undefined : sanitizeClip(clip)
+  const type = USE_PNG ? 'png' : 'jpeg'
+
+  if (USE_PNG) {
+    const buf = await page.screenshot({
+      type: 'png',
+      clip: useClip,
+      fullPage: Boolean(fullPage),
+      captureBeyondViewport: Boolean(fullPage),
+    })
+    writeFileSync(filePath, buf)
+    return buf.byteLength
+  }
+
   for (const q of qualities) {
     try {
       const buf = await page.screenshot({
@@ -426,9 +548,9 @@ async function captureCompressed(page, filePath, clip, { fullPage = false } = {}
         captureBeyondViewport: Boolean(fullPage),
       })
       best = buf
+      // Keep the highest quality that still fits the budget
       if (buf.byteLength <= targetBytes) break
     } catch (err) {
-      // Bad clip (0 height / offscreen) → fall back to full viewport once
       if (useClip) {
         console.warn(`  warn: clip failed (${err.message || err}); using full viewport`)
         useClip = undefined
@@ -602,11 +724,14 @@ Then re-run:
       await sleep(250)
 
       const suffix = FULL_SCREEN ? '-full' : ''
-      const file = `${stage.id}${suffix}.jpg`
+      const ext = USE_PNG ? 'png' : 'jpg'
+      const file = `${stage.id}${suffix}.${ext}`
       const outPath = join(OUT_DIR, file)
-      // Full-screen / full-page: skip stage crops so the whole frame is kept.
+      // Prefer full viewport (includes topbar + page header/emoji). Optional crops only if set.
       const clip =
-        FULL_SCREEN || FULL_PAGE ? undefined : await resolveClip(page, stage)
+        FULL_SCREEN || FULL_PAGE || !stage.clipFrom
+          ? stage.clip
+          : await resolveClip(page, stage)
       const bytes = await captureCompressed(page, outPath, clip, {
         fullPage: FULL_PAGE,
       })
