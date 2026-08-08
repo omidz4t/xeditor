@@ -59,12 +59,28 @@ jobs:
         run: |
           node scripts/bump-version.mjs --force patch --tag --skip-ci
           VERSION=$(node -p "require('./package.json').version")
+          REPO="${GITHUB_REPOSITORY}"
+          TAG="v${VERSION}"
+          BASE="https://github.com/${REPO}/releases"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "release_url=${BASE}/tag/${TAG}" >> "$GITHUB_OUTPUT"
+          echo "app_url=${BASE}/download/${TAG}/app.xdc" >> "$GITHUB_OUTPUT"
+          echo "full_url=${BASE}/download/${TAG}/editor-full.xdc" >> "$GITHUB_OUTPUT"
+          echo "lite_url=${BASE}/download/${TAG}/editor-lite.xdc" >> "$GITHUB_OUTPUT"
           {
-            echo "### Release"
-            echo "- **version:** \`${VERSION}\`"
-            echo "- **site:** https://omidz4t.github.io/xeditor/"
-            echo "- **demo:** https://omidz4t.github.io/xeditor/app/"
+            echo "### Release v${VERSION}"
+            echo ""
+            echo "| | Link |"
+            echo "|--|--|"
+            echo "| **Version** | \`${VERSION}\` (\`${TAG}\`) |"
+            echo "| **Release** | ${BASE}/tag/${TAG} |"
+            echo "| **app.xdc** | ${BASE}/download/${TAG}/app.xdc |"
+            echo "| **editor-full.xdc** | ${BASE}/download/${TAG}/editor-full.xdc |"
+            echo "| **editor-lite.xdc** | ${BASE}/download/${TAG}/editor-lite.xdc |"
+            echo "| **Site** | https://omidz4t.github.io/xeditor/ |"
+            echo "| **Demo** | https://omidz4t.github.io/xeditor/app/ |"
+            echo "| **Versions page** | https://omidz4t.github.io/xeditor/versions.html |"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push release commit and tag
@@ -73,17 +89,26 @@ jobs:
           git push origin "v${{ steps.version.outputs.version }}"
 
       - name: Build WebXDC + Pages site
+        env:
+          XEDITOR_VERSION: ${{ steps.version.outputs.version }}
+          XEDITOR_REPO: ${{ github.repository }}
         run: npm run build:pages
 
       - name: Verify outputs
         run: |
           test -f dist-pages/index.html
           test -f dist-pages/styles.css
+          test -f dist-pages/versions.html
+          test -f dist-pages/versions.json
           test -f dist-pages/app/index.html
-          # Browser demo needs IndexedDB-backed mock (not shipped in .xdc)
           test -f dist-pages/app/webxdc.js
           grep -q 'IndexedDB' dist-pages/app/webxdc.js
           test ! -f dist/webxdc.js
+          # Version must be baked into the landing page (not leftover placeholders)
+          grep -q "v${{ steps.version.outputs.version }}" dist-pages/index.html
+          grep -q "v${{ steps.version.outputs.version }}" dist-pages/versions.html
+          grep -q "releases/download/v${{ steps.version.outputs.version }}/app.xdc" dist-pages/index.html
+          ! grep -q '__XEDITOR_VERSION__' dist-pages/index.html
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
@@ -106,7 +131,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webxdc-v${{ steps.version.outputs.version }}
-          path: dist-xdc/*.xdc
+          path: |
+            dist-xdc/*.xdc
+            dist-pages/versions.json
           if-no-files-found: error
           retention-days: 30
 
@@ -125,16 +152,18 @@ jobs:
 
             Collaborative block editor for Delta Chat (WebXDC).
 
-            ### Packages
-            | File | Notes |
-            |------|--------|
-            | `app.xdc` | Default (full fonts) |
-            | `editor-full.xdc` | All Shabnam + Arad weights |
-            | `editor-lite.xdc` | Regular + Bold only (smaller) |
+            ### Downloads
+            | Package | Link |
+            |---------|------|
+            | `app.xdc` (default) | ${{ steps.version.outputs.app_url }} |
+            | `editor-full.xdc` | ${{ steps.version.outputs.full_url }} |
+            | `editor-lite.xdc` | ${{ steps.version.outputs.lite_url }} |
 
             ### Site
-            - https://omidz4t.github.io/xeditor/
+            - Home: https://omidz4t.github.io/xeditor/
             - Demo: https://omidz4t.github.io/xeditor/app/
+            - Versions: https://omidz4t.github.io/xeditor/versions.html
+            - This release: ${{ steps.version.outputs.release_url }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

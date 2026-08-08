@@ -450,6 +450,76 @@ section {
   font-size: 0.94rem;
 }
 
+.card__meta {
+  margin: 0.75rem 0 0.5rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 650;
+  color: var(--accent) !important;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+  margin-top: 0.35rem;
+  box-sizing: border-box;
+}
+
+.version-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.version-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.version-table th,
+.version-table td {
+  padding: 0.75rem 1rem;
+  text-align: start;
+  border-bottom: 1px solid var(--border);
+}
+
+.version-table th {
+  background: var(--bg-soft);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.version-table tr:last-child td {
+  border-bottom: none;
+}
+
+.version-table a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.version-table a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.version-table .tag {
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
 /* ── Split / list blocks ────────────────────────────────── */
 
 .split {
