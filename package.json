@@ -19,7 +19,8 @@
     "screenshots": "node scripts/screenshot-app.mjs",
     "screenshots:full": "node scripts/screenshot-app.mjs --full-screen",
     "screenshots:full-page": "node scripts/screenshot-app.mjs --full-screen --full-page",
-    "screenshots:pages": "BASE_URL=https://omidz4t.github.io/xeditor node scripts/screenshot-app.mjs"
+    "screenshots:pages": "BASE_URL=https://omidz4t.github.io/xeditor APP_PATH=/app/ node scripts/screenshot-app.mjs",
+    "screenshots:local-pages": "BASE_URL=http://127.0.0.1:4173 APP_PATH=/app/ OUT_DIR=dist/screenshots node scripts/screenshot-app.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.2",

@@ -1,3 +1,9 @@
-/* App web fonts: Shabnam + Arad (Persian / Arabic). */
+/* App web fonts: Shabnam + Arad (Persian / Arabic).
+ *
+ * Dev (vite / HTTP): nested @import is fine.
+ * WebXDC packages rewrite this file to a single flat sheet without @import —
+ * Delta Chat’s webxdc:// often serves nested .css as text/plain, which Chromium
+ * refuses to apply. See scripts/package-font-variants.mjs.
+ */
 @import './shabnam/shabnam.css';
 @import './arad/arad.css';
