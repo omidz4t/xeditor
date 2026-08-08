@@ -357,6 +357,9 @@ window.webxdc = (() => {
   return {
     sendUpdateInterval: 1000,
     sendUpdateMaxSize: 999999,
+    /** App detects browser/Pages demo vs real Delta Chat host. */
+    // @ts-ignore mock marker
+    __xeditorBrowserMock: true,
     selfAddr,
     selfName: params.get("name") || "device0",
     // @ts-ignore mock helpers

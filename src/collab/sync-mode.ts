@@ -8,6 +8,38 @@ export const COLLAB_MODE_PAYLOAD_KEY = 'collabMode' as const
 
 const LOCAL_CACHE_KEY = 'xeditor-collab-mode'
 
+/**
+ * True when running under the IndexedDB browser mock (Vite dev / GitHub Pages demo),
+ * not inside Delta Chat or another real WebXDC host.
+ */
+export function isBrowserWebxdcMock(): boolean {
+  try {
+    const w = window.webxdc as { __xeditorBrowserMock?: boolean } | undefined
+    if (w?.__xeditorBrowserMock === true) return true
+    // Fallback: mock default identity when flag missing from older builds.
+    if (w && typeof (w as { selfAddr?: string }).selfAddr === 'string') {
+      const addr = (w as { selfAddr: string }).selfAddr
+      if (addr === 'device0@local.host' || addr.endsWith('@local.host')) {
+        // Real hosts rarely use @local.host; mock defaults to device0@local.host
+        if (typeof location !== 'undefined') {
+          const h = location.hostname
+          if (
+            h === 'localhost'
+            || h === '127.0.0.1'
+            || h.endsWith('.github.io')
+            || h === ''
+          ) {
+            return true
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false
+}
+
 export function isCollabSyncMode(value: unknown): value is CollabSyncMode {
   return typeof value === 'string' && VALID_MODES.has(value as CollabSyncMode)
 }

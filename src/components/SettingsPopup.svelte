@@ -36,6 +36,7 @@ import {
 } from '../collab/share-to-chat'
 import {
   collabModeDescription,
+  isBrowserWebxdcMock,
   type CollabSyncMode,
 } from '../collab/sync-mode'
 
@@ -216,6 +217,9 @@ const syncModeOptions: { value: CollabSyncMode; label: string }[] = [
   { value: 'local', label: 'Local' },
 ]
 
+const browserOnly = $derived(isBrowserWebxdcMock())
+let deltaNeedOpen = $state(false)
+
 const activeLayout = $derived.by(() => pageLayout ?? 'container')
 const activeSyncMode = $derived.by(() => syncMode ?? null)
 
@@ -224,9 +228,22 @@ function setLayout(mode: PageLayoutMode) {
   onpageLayoutChange?.(mode)
 }
 
+function syncModeAllowed(mode: CollabSyncMode): boolean {
+  if (!browserOnly) return true
+  return mode === 'local'
+}
+
 function setSyncMode(mode: CollabSyncMode) {
+  if (!syncModeAllowed(mode)) {
+    deltaNeedOpen = true
+    return
+  }
   if (mode === activeSyncMode) return
   onsyncModeChange?.(mode)
+}
+
+function showDeltaNeed() {
+  deltaNeedOpen = true
 }
 
 function toggleVim() {
@@ -848,16 +865,29 @@ $effect(() => {
           {:else if activeTab === 'sync'}
             <section class="settings-section">
               <p class="settings-hint">
-                Shared with everyone in this chat (silent update, no notification). You can change it anytime.
+                {#if browserOnly}
+                  Browser demo: only <strong>Local</strong> works here. Hover or click
+                  Realtime / Chat + live to learn about Delta Chat.
+                {:else}
+                  Shared with everyone in this chat (silent update, no notification). You can change it anytime.
+                {/if}
               </p>
               <div class="theme-toggle theme-toggle--3" role="group" aria-label="Sync mode">
                 {#each syncModeOptions as option (option.value)}
+                  {@const allowed = syncModeAllowed(option.value)}
                   <button
                     type="button"
                     class="theme-toggle-btn"
                     class:active={activeSyncMode === option.value}
+                    class:theme-toggle-btn--locked={!allowed}
                     aria-pressed={activeSyncMode === option.value}
-                    use:hoverTooltip={collabModeDescription(option.value)}
+                    aria-disabled={!allowed}
+                    use:hoverTooltip={allowed
+                      ? collabModeDescription(option.value)
+                      : 'Requires Delta Chat — click for details'}
+                    onmouseenter={() => {
+                      if (!allowed) showDeltaNeed()
+                    }}
                     onclick={() => setSyncMode(option.value)}
                   >
                     {option.label}
@@ -1189,6 +1219,46 @@ $effect(() => {
       </div>
       {/if}
     </div>
+
+    {#if deltaNeedOpen}
+      <div class="delta-need-root" role="presentation">
+        <button
+          type="button"
+          class="delta-need-backdrop"
+          aria-label="Dismiss"
+          onclick={() => (deltaNeedOpen = false)}
+        ></button>
+        <div
+          class="delta-need-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-delta-need-title"
+        >
+          <h3 id="settings-delta-need-title" class="delta-need-title">Install Delta Chat</h3>
+          <p class="delta-need-body">
+            <strong>Realtime</strong> and <strong>Chat + live</strong> only work inside
+            Delta Chat (WebXDC). This browser demo can use <strong>Local only</strong>.
+          </p>
+          <div class="delta-need-actions">
+            <a
+              class="delta-need-btn delta-need-btn--primary"
+              href="https://delta.chat/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Get Delta Chat</a>
+            <a
+              class="delta-need-btn"
+              href="https://github.com/omidz4t/xeditor/releases"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Download .xdc</a>
+            <button type="button" class="delta-need-btn" onclick={() => (deltaNeedOpen = false)}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -2007,6 +2077,96 @@ $effect(() => {
   background: var(--settings-control-active);
   color: var(--settings-text);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+
+.theme-toggle-btn--locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.theme-toggle-btn--locked:hover {
+  opacity: 0.72;
+}
+
+.delta-need-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.delta-need-backdrop {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgb(15 15 15 / 0.45);
+  cursor: pointer;
+}
+
+.delta-need-panel {
+  position: relative;
+  width: min(400px, 100%);
+  padding: 20px 20px 16px;
+  border-radius: 14px;
+  background: var(--settings-panel-bg, #fff);
+  border: 1px solid var(--settings-panel-border, rgb(15 15 15 / 0.08));
+  box-shadow: 0 28px 56px rgb(15 15 15 / 0.22);
+  color: var(--settings-text, #37352f);
+}
+
+.delta-need-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.delta-need-body {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.delta-need-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.delta-need-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--settings-control-border, #e9e9e7);
+  background: var(--settings-control-bg, #f7f6f3);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.delta-need-btn:hover {
+  background: var(--settings-hover, #f1f1ef);
+}
+
+.delta-need-btn--primary {
+  border-color: transparent;
+  background: var(--xpe-primary, #2383e2);
+  color: #fff;
+}
+
+.delta-need-btn--primary:hover {
+  filter: brightness(1.05);
+  background: var(--xpe-primary, #2383e2);
 }
 
 .settings-row {
