@@ -1,6 +1,11 @@
 import type { Block } from '@xproeditor/core'
 import type { RealtimeListener } from '@webxdc/types'
 import * as Y from 'yjs'
+import {
+  loadLocalYjsState,
+  localDocStoreKey,
+  saveLocalYjsState,
+} from './local-doc-idb'
 import WebxdcProvider, { CHAT_ORIGIN } from './y-webxdc-provider'
 import { PresenceManager, type PresenceHandle } from './presence'
 import {
@@ -51,10 +56,14 @@ import { maybeCompactMockXdcUpdates } from './webxdc-storage'
 
 const REALTIME_ORIGIN = 'webxdc-realtime'
 const LOCAL_ORIGIN = 'local'
+/** Applied when hydrating the Y.Doc from IndexedDB (local mode). */
+const LOCAL_IDB_ORIGIN = 'local-idb'
 const INIT_WAIT_MS = 1500
 const INIT_WAIT_EXTRA_MS = 2000
 /** Chat is durable save only — batch rather than stream every edit. */
 const CHAT_AUTOSAVE_MS = 5000
+/** Debounce full-state writes to IndexedDB in local-only mode. */
+const LOCAL_IDB_SAVE_MS = 400
 const REALTIME_SYNC_RETRY_MS = 1200
 /** Keep offering our state vector while peers may join late. */
 const REALTIME_SYNC_HEARTBEAT_MS = 4000
@@ -384,6 +393,7 @@ export async function createCollabSession(
 
   let syncRetryTimer: ReturnType<typeof setTimeout> | number | undefined
   let syncHeartbeatTimer: ReturnType<typeof setInterval> | number | undefined
+  let localIdbSaveTimer: ReturnType<typeof setTimeout> | number | undefined
   /** Queued only while the channel is not up yet; otherwise we send instantly. */
   let pendingRealtimeUpdates: Uint8Array[] = []
   let realtimeChannel: RealtimeListener | null = null
@@ -392,9 +402,34 @@ export async function createCollabSession(
   let chatOutbound = false
   let realtimeOutbound = false
   const syncModeListeners = new Set<(mode: CollabSyncMode) => void>()
+  const localIdbKey = localDocStoreKey(webxdc.selfAddr || 'default')
 
-  // Dev mock stores every status update in localStorage forever — prune early
-  // so large imports don't hit QuotaExceededError on first autosave.
+  /** Persist full Y state to IndexedDB (local-only mode). */
+  const flushLocalIdbSave = () => {
+    if (localIdbSaveTimer) {
+      clearTimeout(localIdbSaveTimer)
+      localIdbSaveTimer = undefined
+    }
+    if (currentSyncMode !== 'local') return
+    try {
+      const state = Y.encodeStateAsUpdateV2(doc)
+      if (state.byteLength === 0) return
+      void saveLocalYjsState(localIdbKey, state)
+    } catch (error) {
+      console.warn('[webxdc-yjs] local IndexedDB encode/save failed', error)
+    }
+  }
+
+  const scheduleLocalIdbSave = () => {
+    if (currentSyncMode !== 'local') return
+    if (localIdbSaveTimer) clearTimeout(localIdbSaveTimer)
+    localIdbSaveTimer = window.setTimeout(() => {
+      localIdbSaveTimer = undefined
+      flushLocalIdbSave()
+    }, LOCAL_IDB_SAVE_MS)
+  }
+
+  // Dev mock: drop legacy localStorage mock payloads.
   maybeCompactMockXdcUpdates()
 
   // Inbound chat listener is always attached so we can discover collabMode.
@@ -570,6 +605,7 @@ export async function createCollabSession(
     if (!isCollabSyncMode(mode)) return
     const publish = opts?.publish !== false
     const changed = mode !== currentSyncMode
+    const wasLocal = currentSyncMode === 'local'
     currentSyncMode = mode
     writeCachedCollabMode(mode)
     applyTransportForMode(mode)
@@ -584,6 +620,13 @@ export async function createCollabSession(
         chatProvider.setCollabModeLocal(mode)
       }
     }
+    // Entering or staying in local mode: keep IndexedDB snapshot fresh.
+    if (mode === 'local') {
+      scheduleLocalIdbSave()
+    } else if (wasLocal && localIdbSaveTimer) {
+      // Leaving local — flush once so the last local state is kept as a backup.
+      flushLocalIdbSave()
+    }
     if (changed) {
       for (const handler of syncModeListeners) handler(mode)
     }
@@ -592,7 +635,18 @@ export async function createCollabSession(
   doc.on('updateV2', (update, origin) => {
     // Remote payloads are already on the wire for their respective channels.
     // Chat durable queue is owned by WebxdcProvider (batched autosave only).
-    if (origin === REALTIME_ORIGIN || origin === CHAT_ORIGIN) return
+    if (origin === REALTIME_ORIGIN || origin === CHAT_ORIGIN || origin === LOCAL_IDB_ORIGIN) {
+      // Still persist after remote apply if user is in local-only mode.
+      if (currentSyncMode === 'local' && origin !== LOCAL_IDB_ORIGIN) {
+        scheduleLocalIdbSave()
+      }
+      return
+    }
+    // Local-only: durable save to IndexedDB (no chat / no live channel).
+    if (currentSyncMode === 'local') {
+      scheduleLocalIdbSave()
+      return
+    }
     if (!realtimeOutbound) return
     if (!(update instanceof Uint8Array) || update.byteLength === 0) return
     // Instant: every local Yjs change hits the realtime channel in this tick.
@@ -612,6 +666,23 @@ export async function createCollabSession(
   migrateLegacyContentIfNeeded(doc, LOCAL_ORIGIN)
   refreshFromY()
 
+  // Local mode: hydrate from IndexedDB before seeding an empty workspace.
+  if (currentSyncMode === 'local' && !hasYDocumentContent(doc)) {
+    try {
+      const saved = await loadLocalYjsState(localIdbKey)
+      if (saved && saved.byteLength > 0) {
+        suppressObserveEmit = true
+        Y.applyUpdateV2(doc, saved, LOCAL_IDB_ORIGIN)
+        migrateLegacyContentIfNeeded(doc, LOCAL_ORIGIN)
+        refreshFromY()
+        suppressObserveEmit = false
+      }
+    } catch (error) {
+      console.warn('[webxdc-yjs] failed to load local IndexedDB snapshot', error)
+      suppressObserveEmit = false
+    }
+  }
+
   // Wait for peer content when a transport can deliver it.
   if (chatOutbound || realtimeOutbound) {
     await waitForYDocumentContent(doc, INIT_WAIT_MS, REMOTE_ORIGINS)
@@ -623,6 +694,7 @@ export async function createCollabSession(
     const canBootstrap =
       currentSyncMode === 'local' || webxdc.isAppSender || !chatOutbound
     if (canBootstrap) {
+      // Local mode: never pull package bootstrap — empty or IDB only.
       const bootstrap =
         currentSyncMode === 'local' ? null : await fetchBootstrapDocument()
       const seed = ensureUsableDocument(bootstrap ?? createEmptyDocument())
@@ -630,6 +702,7 @@ export async function createCollabSession(
       syncDocumentToY(doc, { version: 2, pages: {} }, seed, LOCAL_ORIGIN)
       refreshFromY()
       suppressObserveEmit = false
+      if (currentSyncMode === 'local') scheduleLocalIdbSave()
     } else {
       // Give the app sender a bit longer to publish the initial document.
       await waitForYDocumentContent(doc, INIT_WAIT_EXTRA_MS, REMOTE_ORIGINS)
@@ -643,6 +716,9 @@ export async function createCollabSession(
         suppressObserveEmit = false
       }
     }
+  } else if (currentSyncMode === 'local') {
+    // Loaded from IDB or residual state — keep snapshot warm.
+    scheduleLocalIdbSave()
   }
 
   // If pages map is still empty (should not happen), keep an empty in-memory doc
@@ -855,10 +931,14 @@ export async function createCollabSession(
         sendSyncStep1()
       }
       if (chatOutbound) chatProvider.syncToChatPeers()
+      if (currentSyncMode === 'local') flushLocalIdbSave()
     },
     destroy: () => {
       if (syncRetryTimer) clearTimeout(syncRetryTimer)
       if (syncHeartbeatTimer) clearInterval(syncHeartbeatTimer)
+      if (localIdbSaveTimer) clearTimeout(localIdbSaveTimer)
+      // Best-effort durable snapshot before teardown (local mode).
+      if (currentSyncMode === 'local') flushLocalIdbSave()
       stopRealtime()
       chatProvider.destroy()
       syncModeListeners.clear()
