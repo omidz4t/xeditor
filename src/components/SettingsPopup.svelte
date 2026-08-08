@@ -242,9 +242,7 @@ function setSyncMode(mode: CollabSyncMode) {
   onsyncModeChange?.(mode)
 }
 
-function showDeltaNeed() {
-  deltaNeedOpen = true
-}
+
 
 function toggleVim() {
   setVimEnabled(!vimEnabled)
@@ -866,8 +864,8 @@ $effect(() => {
             <section class="settings-section">
               <p class="settings-hint">
                 {#if browserOnly}
-                  Browser demo: only <strong>Local</strong> works here. Hover or click
-                  Realtime / Chat + live to learn about Delta Chat.
+                  Browser demo: only <strong>Local</strong> works here. Click Realtime or
+                  Chat + live for Delta Chat details.
                 {:else}
                   Shared with everyone in this chat (silent update, no notification). You can change it anytime.
                 {/if}
@@ -884,10 +882,7 @@ $effect(() => {
                     aria-disabled={!allowed}
                     use:hoverTooltip={allowed
                       ? collabModeDescription(option.value)
-                      : 'Requires Delta Chat — click for details'}
-                    onmouseenter={() => {
-                      if (!allowed) showDeltaNeed()
-                    }}
+                      : 'Not applicable'}
                     onclick={() => setSyncMode(option.value)}
                   >
                     {option.label}

@@ -32,10 +32,6 @@
     onselect?.(mode)
   }
 
-  function showDeltaNeeded() {
-    deltaModalOpen = true
-  }
-
   function closeDeltaModal() {
     deltaModalOpen = false
   }
@@ -57,7 +53,7 @@
           {#if browserOnly}
             This is the <strong>browser demo</strong>. Only
             <strong>Local only</strong> is available here (data stays in this
-            browser’s IndexedDB). Chat and realtime sync need Delta Chat.
+            browser’s IndexedDB). Click Realtime or Chat + live for Delta Chat info.
           {:else}
             Pick once for everyone in this chat. Your choice is shared silently
             (no chat notification). Later openers use the same mode.
@@ -74,13 +70,7 @@
             class:sync-setup-option--disabled={!allowed}
             class:sync-setup-option--recommended={browserOnly && mode === 'local'}
             aria-disabled={!allowed}
-            title={!allowed ? 'Requires Delta Chat' : undefined}
-            onmouseenter={() => {
-              if (!allowed) showDeltaNeeded()
-            }}
-            onfocus={() => {
-              if (!allowed) showDeltaNeeded()
-            }}
+            title={!allowed ? 'Not applicable in the browser demo' : undefined}
             onclick={() => choose(mode)}
           >
             <span class="sync-setup-option__row">
@@ -232,6 +222,7 @@
   }
 
   .sync-setup-option--disabled {
+    position: relative;
     opacity: 0.55;
     cursor: not-allowed;
     background: color-mix(in srgb, var(--settings-control-bg, #f7f6f3) 70%, transparent);
@@ -239,6 +230,27 @@
 
   .sync-setup-option--disabled:hover {
     opacity: 0.72;
+  }
+
+  /* Small hover tip only — modal opens on click, not hover. */
+  .sync-setup-option--disabled:hover::after,
+  .sync-setup-option--disabled:focus-visible::after {
+    content: 'Not applicable';
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    inset-inline-end: 12px;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--settings-text, #37352f);
+    color: var(--settings-panel-bg, #fff);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgb(15 15 15 / 0.18);
   }
 
   .sync-setup-option:focus-visible {
