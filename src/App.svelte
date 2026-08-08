@@ -111,7 +111,7 @@ import {
   type PageMeta,
 } from './collab/document'
 import { createCollabSession } from './collab/webxdc-yjs'
-import type { CollabSyncMode } from './collab/sync-mode'
+import { isBrowserWebxdcMock, type CollabSyncMode } from './collab/sync-mode'
 import type { FollowInvite, PeerPresence, PresenceHandle } from './collab/presence'
 import { mergeBlocksForPush, mergeRemoteBlocks } from './collab/block-merge'
 
@@ -166,6 +166,8 @@ let contextCommentTarget = $state<{
 } | null>(null)
 let presence = $state<PresenceHandle | null>(null)
 let onlinePeers = $state<PeerPresence[]>([])
+/** Browser/Pages demo — no multi-peer UI. */
+const browserDemoOnly = $derived(isBrowserWebxdcMock())
 /** Peer addr we're actively following (viewport tracks their cursor/block). */
 let followedPeerAddr = $state<string | null>(null)
 /** Incoming “please follow me” invite from a peer (ephemeral). */
@@ -2607,7 +2609,7 @@ $effect(() => {
 />
 <SettingsPopup
   bind:open={settingsOpen}
-  peers={settingsPeers}
+  peers={browserDemoOnly ? [] : settingsPeers}
   pages={settingsPages}
   currentPageId={currentPageId}
   pageTitle={pageTitle}
@@ -2726,7 +2728,7 @@ $effect(() => {
       <PageSidebar
         bind:open={sidebarOpen}
         {pages}
-        peers={onlinePeers}
+        peers={browserDemoOnly ? [] : onlinePeers}
         currentPageId={currentPageId}
         rootPageId={rootPageId}
         onnavigate={navigateToPage}
@@ -2755,7 +2757,7 @@ $effect(() => {
         <PageHeader
           title={pageTitle}
           {pages}
-          peers={onlinePeers}
+          peers={browserDemoOnly ? [] : onlinePeers}
           currentPageId={currentPageId}
           rootPageId={rootPageId}
           sidebarOpen={sidebarOpen}
@@ -2782,7 +2784,7 @@ $effect(() => {
           </div>
         {/if}
 
-        {#if followInvite}
+        {#if !browserDemoOnly && followInvite}
           <div class="follow-invite-banner" role="status">
             <span
               class="follow-banner__dot"
@@ -2801,7 +2803,7 @@ $effect(() => {
           </div>
         {/if}
 
-        {#if followedPeer}
+        {#if !browserDemoOnly && followedPeer}
           <div class="follow-banner" role="status">
             <span
               class="follow-banner__dot"
@@ -2830,11 +2832,13 @@ $effect(() => {
         <div class="page-inner" class:page-inner--full={pageFullWidth}>
           <div class="page-content">
             <div bind:this={editorAnchor} class="editor-container">
-              <ReactionPie
-                presence={presence}
-                anchor={editorAnchor}
-                currentPageId={currentPageId}
-              />
+              {#if !browserDemoOnly}
+                <ReactionPie
+                  presence={presence}
+                  anchor={editorAnchor}
+                  currentPageId={currentPageId}
+                />
+              {/if}
               <CommentGutter
                 {comments}
                 anchor={editorAnchor}
@@ -2851,7 +2855,7 @@ $effect(() => {
                   currentPageId={currentPageId}
                   createPage={createPage}
                   setPageParent={setPageParent}
-                  lockedBlocks={lockedBlocks}
+                  lockedBlocks={browserDemoOnly ? {} : lockedBlocks}
                   voterId={voterId}
                   vimMode={vimEnabled}
                   onchange={onEditorChange}
@@ -2865,11 +2869,13 @@ $effect(() => {
                 Peer carets/cursors above the editor so they are not covered
                 by contenteditable layers (Vue paints indicators over the page).
               -->
-              <PeerCursors
-                presence={presence}
-                anchor={editorAnchor}
-                currentPageId={currentPageId}
-              />
+              {#if !browserDemoOnly}
+                <PeerCursors
+                  presence={presence}
+                  anchor={editorAnchor}
+                  currentPageId={currentPageId}
+                />
+              {/if}
             </div>
           </div>
         </div>
