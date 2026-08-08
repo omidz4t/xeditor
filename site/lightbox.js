@@ -275,6 +275,126 @@
     step(1)
   })
 
+  // ── Touch swipe → prev / next (single finger; leave multi-touch for pinch) ─
+  const swipe = {
+    active: false,
+    id: null,
+    x0: 0,
+    y0: 0,
+    x: 0,
+    y: 0,
+    t0: 0,
+  }
+  const SWIPE_MIN_PX = 56
+  const SWIPE_MAX_OFF_AXIS = 72
+  const SWIPE_MAX_MS = 700
+
+  function swipeTargetIsControl(target) {
+    return (
+      target instanceof Element
+      && Boolean(target.closest('.lb-prev, .lb-next, .lb-close, [data-lb-close]'))
+    )
+  }
+
+  function resetSwipeVisual() {
+    if (!container) return
+    container.style.transition = 'transform 0.22s ease, opacity 0.22s ease'
+    container.style.transform = ''
+    container.style.opacity = ''
+    window.setTimeout(() => {
+      if (container) container.style.transition = ''
+    }, 240)
+  }
+
+  root.addEventListener(
+    'touchstart',
+    (e) => {
+      if (root.hidden || busy || e.touches.length !== 1) {
+        swipe.active = false
+        return
+      }
+      if (swipeTargetIsControl(e.target)) return
+      const t = e.touches[0]
+      swipe.active = true
+      swipe.id = t.identifier
+      swipe.x0 = t.clientX
+      swipe.y0 = t.clientY
+      swipe.x = t.clientX
+      swipe.y = t.clientY
+      swipe.t0 = performance.now()
+      if (container) {
+        container.style.transition = 'none'
+      }
+    },
+    { passive: true },
+  )
+
+  root.addEventListener(
+    'touchmove',
+    (e) => {
+      if (!swipe.active || root.hidden) return
+      // Pinch / multi-touch → cancel swipe so zoom can work
+      if (e.touches.length !== 1) {
+        swipe.active = false
+        resetSwipeVisual()
+        return
+      }
+      let t = null
+      for (const touch of e.touches) {
+        if (touch.identifier === swipe.id) {
+          t = touch
+          break
+        }
+      }
+      if (!t) return
+      swipe.x = t.clientX
+      swipe.y = t.clientY
+      const dx = swipe.x - swipe.x0
+      const dy = swipe.y - swipe.y0
+      // Only drag horizontally once intent is clear
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.15 && container) {
+        const damp = Math.max(-120, Math.min(120, dx * 0.35))
+        container.style.transform = `translate3d(${damp}px, 0, 0)`
+        container.style.opacity = String(Math.max(0.55, 1 - Math.abs(damp) / 280))
+      }
+    },
+    { passive: true },
+  )
+
+  root.addEventListener(
+    'touchend',
+    (e) => {
+      if (!swipe.active) return
+      swipe.active = false
+      const dt = performance.now() - swipe.t0
+      const dx = swipe.x - swipe.x0
+      const dy = swipe.y - swipe.y0
+      const horizontal = Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy) * 1.2
+      const quick = dt <= SWIPE_MAX_MS
+      const notMostlyVertical = Math.abs(dy) <= SWIPE_MAX_OFF_AXIS || Math.abs(dx) > Math.abs(dy)
+
+      if (horizontal && quick && notMostlyVertical && !busy && gallery.length > 1) {
+        // Swipe left → next; swipe right → previous
+        if (dx < 0) step(1)
+        else step(-1)
+      }
+      resetSwipeVisual()
+      // Ignore leftover changedTouches if multi-finger ended
+      void e
+    },
+    { passive: true },
+  )
+
+  root.addEventListener(
+    'touchcancel',
+    () => {
+      if (!swipe.active) return
+      swipe.active = false
+      resetSwipeVisual()
+    },
+    { passive: true },
+  )
+
   function refitCurrent() {
     if (root.hidden || !image.src) return
     const natW = image.naturalWidth

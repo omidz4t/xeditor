@@ -1301,7 +1301,7 @@ body.carousel-morph-open {
   color: var(--text);
 }
 
-/* 10. Bottom nav */
+/* 10. Bottom nav — full-size CTAs; shadow only (no border) on this bar */
 .bottom-nav {
   position: fixed;
   bottom: 1.5rem;
@@ -1309,14 +1309,21 @@ body.carousel-morph-open {
   z-index: 50;
   transform: translateX(-50%) translateY(0);
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  justify-content: center;
   gap: 0.65rem;
-  padding: 0.45rem 0.55rem;
+  padding: 0.5rem 0.6rem;
   border-radius: var(--pill);
   background: #fff;
-  border: var(--border-card);
+  border: none;
+  box-shadow:
+    0 4px 24px rgb(15 15 15 / 0.12),
+    0 1px 4px rgb(15 15 15 / 0.06);
   opacity: 1;
   pointer-events: auto;
+  max-width: calc(100vw - 1.25rem);
+  box-sizing: border-box;
   transition:
     opacity 0.28s ease,
     transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
@@ -1332,7 +1339,35 @@ body.carousel-morph-open {
 }
 
 .bottom-nav .btn {
-  padding: 0.55rem 1.2rem;
+  /* Match primary landing buttons — ignore .btn--compact shrinkage on phones */
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.7rem 1.65rem;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+}
+
+.bottom-nav .btn--compact {
+  padding: 0.7rem 1.65rem;
+  font-size: 0.92rem;
+}
+
+.bottom-nav .btn__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 380px) {
+  /* Still full control size; only tighten outer gap slightly on very narrow phones */
+  .bottom-nav {
+    gap: 0.5rem;
+    padding: 0.45rem 0.5rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+  }
 }
 
 /* ── Lightbox ──────────────────────────────────────────── */
@@ -1432,6 +1467,10 @@ body.lightbox-open {
   border: 0;
   vertical-align: middle;
   background: #111;
+  /* Allow browser/gesture pinch on the photo itself */
+  touch-action: manipulation;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* Edge controls — always visible (carousel-style circle buttons) */
@@ -1601,33 +1640,67 @@ body.lightbox-open {
 
 @media (max-width: 720px) {
   .lb {
-    padding: 3rem 0.5rem 1rem;
+    /* Leave bottom clear for prev/next so the photo is free to pinch-zoom */
+    padding: 3rem 0.75rem 5.25rem;
+  }
+
+  .lb-container {
+    /* Keep the image away from bottom controls */
+    max-height: min(calc(100vh - 9.5rem), calc(100dvh - 9.5rem));
+  }
+
+  .lb-image {
+    /* Prefer pinch/pan gestures over browser link handling */
+    touch-action: pan-x pan-y pinch-zoom;
   }
 
   .lb-prev,
   .lb-next,
   .lb-close {
-    width: 2.4rem;
-    height: 2.4rem;
-    font-size: 1.4rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    font-size: 1.45rem;
   }
 
   .lb-close {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     top: max(0.5rem, env(safe-area-inset-top));
     right: max(0.5rem, env(safe-area-inset-right));
   }
 
+  /* Prev / next sit at bottom corners — not mid-screen over the image */
+  .lb-prev,
+  .lb-next {
+    top: auto;
+    bottom: max(0.85rem, env(safe-area-inset-bottom));
+    transform: none;
+  }
+
   .lb-prev {
-    left: max(0.35rem, env(safe-area-inset-left));
+    left: max(1rem, env(safe-area-inset-left));
   }
 
   .lb-next {
-    right: max(0.35rem, env(safe-area-inset-right));
+    right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .lb-prev:hover,
+  .lb-next:hover {
+    transform: scale(1.08);
+  }
+
+  .lb-prev:active,
+  .lb-next:active {
+    transform: scale(0.96);
+  }
+
+  .lb-prev:hover span,
+  .lb-next:hover span {
+    transform: translateY(-1px);
   }
 
   .lb-data {
-    padding: 0.55rem 0.5rem 0.1rem;
+    padding: 0.45rem 0.5rem 0.1rem;
     font-size: 0.8rem;
   }
 }

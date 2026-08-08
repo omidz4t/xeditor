@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * After `vite build`, produce two WebXDC packages:
- *   dist-xdc/editor-full.xdc  — all Shabnam + Arad weights
- *   dist-xdc/editor-lite.xdc  — Regular + Bold only (woff2) for both fonts
+ *   dist-xdc/editor-full.xdc  — Arad only (all weights) — no Shabnam
+ *   dist-xdc/editor-lite.xdc  — Regular + Bold only (woff2) for Shabnam + Arad
  *
  * Also keeps dist-xdc/app.xdc as a copy of full (default build artifact).
  *
@@ -77,16 +77,15 @@ function readFontCss(relPath) {
 }
 
 /** Single stylesheet: no @import (webxdc MIME-safe). */
-function buildFlatFontsCss({ shabnamFile, aradFile, label }) {
-  const shabnam = rewriteFontUrls(readFontCss(shabnamFile), 'shabnam')
-  const arad = rewriteFontUrls(readFontCss(aradFile), 'arad')
-  return [
-    `/* ${label} — flat (no @import) for webxdc:// MIME safety */`,
-    shabnam.trim(),
-    '',
-    arad.trim(),
-    '',
-  ].join('\n')
+function buildFlatFontsCss({ shabnamFile = null, aradFile = null, label }) {
+  const parts = [`/* ${label} — flat (no @import) for webxdc:// MIME safety */`]
+  if (shabnamFile) {
+    parts.push(rewriteFontUrls(readFontCss(shabnamFile), 'shabnam').trim(), '')
+  }
+  if (aradFile) {
+    parts.push(rewriteFontUrls(readFontCss(aradFile), 'arad').trim(), '')
+  }
+  return parts.join('\n')
 }
 
 function stripExtraFontCss(files) {
@@ -102,16 +101,20 @@ function stripExtraFontCss(files) {
   ])
 }
 
-/** Full package: all font weights for Shabnam + Arad. */
+/** Full package: Arad only (all weights) — no Shabnam. */
 function packageFull() {
   const files = collectFiles(dist)
+
+  // Drop entire Shabnam tree from the full/app package
+  for (const key of Object.keys(files)) {
+    if (key.startsWith('fonts/shabnam/')) delete files[key]
+  }
 
   files['fonts/fonts.css'] = new Uint8Array(
     Buffer.from(
       buildFlatFontsCss({
-        shabnamFile: 'shabnam/shabnam-full.css',
         aradFile: 'arad/arad-full.css',
-        label: 'Full: Shabnam + Arad (all weights)',
+        label: 'Full: Arad only (all weights)',
       }),
       'utf8',
     ),
@@ -164,9 +167,9 @@ function packageLite() {
   zipTo(join(outDir, 'editor-lite.xdc'), files)
 }
 
-console.log('Packaging WebXDC font variants (Shabnam + Arad)…')
+console.log('Packaging WebXDC font variants…')
 packageFull()
 packageLite()
 console.log('Done.')
-console.log('  full → dist-xdc/editor-full.xdc (also app.xdc)')
-console.log('  lite → dist-xdc/editor-lite.xdc (Regular + Bold woff2 only)')
+console.log('  full → dist-xdc/editor-full.xdc (also app.xdc) — Arad only, all weights')
+console.log('  lite → dist-xdc/editor-lite.xdc — Shabnam + Arad (Regular + Bold woff2)')
