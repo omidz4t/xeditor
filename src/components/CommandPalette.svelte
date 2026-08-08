@@ -61,7 +61,13 @@ import Search from '@lucide/svelte/icons/search'
     const q = query.trim().toLowerCase()
     const items: PaletteItem[] = []
     const createTitleValue = query.trim()
-    const prioritizedCommandIds = new Set(['toggle-sidebar', 'create-page', 'toggle-comments'])
+    const prioritizedCommandIds = new Set([
+      'toggle-sidebar',
+      'create-page',
+      'toggle-comments',
+      'toggle-full-width',
+      'toggle-fullscreen',
+    ])
 
     for (const command of commands) {
       if (!prioritizedCommandIds.has(command.id)) continue

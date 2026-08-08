@@ -1,4 +1,4 @@
-import { derived, type Readable } from 'svelte/store'
+import { derived, readable, type Readable } from 'svelte/store'
 import { useTheme } from './useTheme'
 
 export type AppCommand = {
@@ -17,6 +17,12 @@ type CommandSources = {
   onOpenShortcuts?: () => void
   sidebarOpen: Readable<boolean>
   commentsOpen: Readable<boolean>
+  /** Page body uses full content width (vs container). */
+  pageFullWidth?: Readable<boolean>
+  /** Browser document fullscreen (Fullscreen API). */
+  isFullScreen?: Readable<boolean>
+  onToggleFullWidth?: () => void
+  onToggleFullScreen?: () => void
   /** Open Settings → Import / Export. */
   onOpenImportExport?: () => void
   // Export
@@ -62,9 +68,13 @@ export function formatShortcut(...parts: string[]): string {
 export function useAppCommands(sources: CommandSources): { commands: Readable<AppCommand[]> } {
   const { resolvedTheme, updateTheme, toggleTheme } = useTheme()
 
+  // Optional stores default to a constant false stream so derived always has values.
+  const pageFullWidth$ = sources.pageFullWidth ?? readable(false)
+  const isFullScreen$ = sources.isFullScreen ?? readable(false)
+
   const commands = derived(
-    [sources.sidebarOpen, sources.commentsOpen, resolvedTheme],
-    ([$sidebarOpen, $commentsOpen, $resolvedTheme]) => {
+    [sources.sidebarOpen, sources.commentsOpen, resolvedTheme, pageFullWidth$, isFullScreen$],
+    ([$sidebarOpen, $commentsOpen, $resolvedTheme, $pageFullWidth, $isFullScreen]) => {
       const list: AppCommand[] = [
         {
           id: 'toggle-sidebar',
@@ -97,6 +107,37 @@ export function useAppCommands(sources: CommandSources): { commands: Readable<Ap
           keywords: ['comment', 'comments', 'discuss', 'feedback', 'panel', 'right'],
           shortcut: formatShortcut('Mod', 'Shift', 'C'),
           run: sources.onToggleComments,
+        },
+        {
+          id: 'toggle-full-width',
+          label: $pageFullWidth ? 'Use container width' : 'Use full width',
+          keywords: [
+            'full',
+            'width',
+            'fullscreen',
+            'full screen',
+            'layout',
+            'wide',
+            'narrow',
+            'container',
+            'page',
+          ],
+          run: () => sources.onToggleFullWidth?.(),
+        },
+        {
+          id: 'toggle-fullscreen',
+          label: $isFullScreen ? 'Exit full screen' : 'Enter full screen',
+          keywords: [
+            'fullscreen',
+            'full screen',
+            'maximize',
+            'browser',
+            'f11',
+            'presentation',
+            'zen',
+          ],
+          // Browser F11 is often reserved; expose via palette (Ctrl/Cmd+K).
+          run: () => sources.onToggleFullScreen?.(),
         },
         {
           id: 'keyboard-shortcuts',
