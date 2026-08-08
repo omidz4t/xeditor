@@ -80,11 +80,19 @@ jobs:
           test -f dist-pages/index.html
           test -f dist-pages/styles.css
           test -f dist-pages/app/index.html
+          # Browser demo needs IndexedDB-backed mock (not shipped in .xdc)
+          test -f dist-pages/app/webxdc.js
+          grep -q 'IndexedDB' dist-pages/app/webxdc.js
+          test ! -f dist/webxdc.js
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
-          if unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing'; then
-            echo "Marketing paths leaked into .xdc" >&2
+          if unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing|webxdc-mock|Browser demo mock'; then
+            echo "Marketing/mock leaked into .xdc" >&2
+            exit 1
+          fi
+          if unzip -l dist-xdc/app.xdc | grep -E '(^|/)webxdc\.js$'; then
+            echo "Mock webxdc.js must not be inside .xdc (host provides it)" >&2
             exit 1
           fi
           if grep -q 'How it works' dist/index.html; then
