@@ -114,3 +114,8 @@ service-account*.json
 .fusebox/
 .serverless/
 .webpack/
+
+# Screenshot script may write large trial outputs; committed docs/screenshots/*.jpg are intentional.
+# Uncomment to ignore generated shots locally:
+# docs/screenshots/*.jpg
+# docs/screenshots/manifest.json

@@ -1,0 +1,76 @@
+{
+  "generatedAt": "2026-08-08T15:15:23.786Z",
+  "base": "https://omidz4t.github.io/xeditor",
+  "viewport": {
+    "width": 1100,
+    "height": 700,
+    "deviceScaleFactor": 1
+  },
+  "targetKb": 12,
+  "shots": [
+    {
+      "id": "landing-hero",
+      "title": "Marketing hero",
+      "file": "landing-hero.jpg",
+      "bytes": 15441,
+      "kb": 15.1,
+      "url": "https://omidz4t.github.io/xeditor/"
+    },
+    {
+      "id": "landing-download",
+      "title": "Download cards",
+      "file": "landing-download.jpg",
+      "bytes": 22187,
+      "kb": 21.7,
+      "url": "https://omidz4t.github.io/xeditor/#download"
+    },
+    {
+      "id": "app-sync-setup",
+      "title": "Sync mode dialog (browser: local only)",
+      "file": "app-sync-setup.jpg",
+      "bytes": 11850,
+      "kb": 11.6,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    },
+    {
+      "id": "app-editor",
+      "title": "Block editor main canvas",
+      "file": "app-editor.jpg",
+      "bytes": 12253,
+      "kb": 12,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    },
+    {
+      "id": "app-editor-focus",
+      "title": "Editor focused mid-document",
+      "file": "app-editor-focus.jpg",
+      "bytes": 12253,
+      "kb": 12,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    },
+    {
+      "id": "app-sidebar",
+      "title": "Page sidebar open",
+      "file": "app-sidebar.jpg",
+      "bytes": 12253,
+      "kb": 12,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    },
+    {
+      "id": "app-settings",
+      "title": "Settings dialog",
+      "file": "app-settings.jpg",
+      "bytes": 11761,
+      "kb": 11.5,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    },
+    {
+      "id": "app-settings-sync",
+      "title": "Settings → Sync tab (local only in browser)",
+      "file": "app-settings-sync.jpg",
+      "bytes": 11356,
+      "kb": 11.1,
+      "url": "https://omidz4t.github.io/xeditor/app/"
+    }
+  ]
+}

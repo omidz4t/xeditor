@@ -15,7 +15,9 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.app.json",
     "version:dry": "node scripts/bump-version.mjs --dry-run",
     "version:bump": "node scripts/bump-version.mjs",
-    "version:release": "node scripts/bump-version.mjs --release"
+    "version:release": "node scripts/bump-version.mjs --release",
+    "screenshots": "node scripts/screenshot-app.mjs",
+    "screenshots:pages": "BASE_URL=https://omidz4t.github.io/xeditor node scripts/screenshot-app.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.2",
@@ -34,12 +36,14 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",
     "postcss": "^8.4.49",
+    "puppeteer": "^25.5.0",
     "svelte-check": "^4.1.4",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",
     "vite": "^6.0.5"
   },
   "allowScripts": {
-    "esbuild@0.25.12": true
+    "esbuild@0.25.12": true,
+    "puppeteer@25.5.0": true
   }
 }
