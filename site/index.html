@@ -231,8 +231,12 @@
           <div class="section-head">
             <h2>Download WebXDC builds</h2>
             <p>
-              Each main release publishes <code>.xdc</code> files on GitHub Releases.
-              Pick the size that fits your chat.
+              Latest release:
+              <strong class="version-pill">v__XEDITOR_VERSION__</strong>
+              ·
+              <a href="__XEDITOR_RELEASE_URL__">Release notes</a>
+              ·
+              <a href="./versions.html">All versions</a>
             </p>
           </div>
 
@@ -244,24 +248,37 @@
                 Default package (same as full fonts). Attach this in Delta Chat for
                 everyday use.
               </p>
+              <p class="card__meta">v__XEDITOR_VERSION__</p>
+              <a class="btn btn--primary btn--block" href="__XEDITOR_APP_XDC_URL__"
+                >Download app.xdc</a
+              >
             </article>
             <article class="card">
               <div class="card__icon" aria-hidden="true">A</div>
               <h3>editor-full.xdc</h3>
               <p>All Shabnam + Arad weights — best typography, larger download.</p>
+              <p class="card__meta">v__XEDITOR_VERSION__</p>
+              <a class="btn btn--ghost btn--block" href="__XEDITOR_FULL_XDC_URL__"
+                >Download editor-full.xdc</a
+              >
             </article>
             <article class="card">
               <div class="card__icon" aria-hidden="true">a</div>
               <h3>editor-lite.xdc</h3>
               <p>Regular + Bold only (woff2) — smaller file when bandwidth matters.</p>
+              <p class="card__meta">v__XEDITOR_VERSION__</p>
+              <a class="btn btn--ghost btn--block" href="__XEDITOR_LITE_XDC_URL__"
+                >Download editor-lite.xdc</a
+              >
             </article>
           </div>
 
           <p class="note" style="margin-top: 1.25rem">
             <strong>This website is separate from the app package.</strong>
-            The landing page under <code>site/</code> is assembled only into
-            GitHub Pages (<code>dist-pages/</code>). WebXDC zips are built from
-            <code>dist/</code> alone, so they never include this marketing page.
+            The landing page is assembled only into GitHub Pages. WebXDC zips are
+            built from <code>dist/</code> alone and never include this marketing page.
+            Direct downloads point at
+            <a href="__XEDITOR_RELEASE_URL__">GitHub Release v__XEDITOR_VERSION__</a>.
           </p>
         </div>
       </section>
@@ -270,18 +287,14 @@
         <div class="cta">
           <h2>Try it now</h2>
           <p>
-            Open the solo browser demo, or grab a release build for Delta Chat.
+            Open the solo browser demo, or grab
+            <strong>v__XEDITOR_VERSION__</strong> for Delta Chat.
           </p>
           <div class="cta__actions">
             <a class="btn btn--primary" href="./app/">Launch demo editor</a>
-            <a
-              class="btn btn--ghost"
-              href="https://github.com/omidz4t/xeditor/releases"
-              >GitHub Releases</a
-            >
-            <a class="btn btn--ghost" href="https://github.com/omidz4t/xeditor"
-              >Source</a
-            >
+            <a class="btn btn--ghost" href="__XEDITOR_APP_XDC_URL__">Download app.xdc</a>
+            <a class="btn btn--ghost" href="__XEDITOR_RELEASE_URL__">Release v__XEDITOR_VERSION__</a>
+            <a class="btn btn--ghost" href="https://github.com/omidz4t/xeditor">Source</a>
           </div>
         </div>
       </div>
@@ -289,11 +302,13 @@
 
     <footer class="site-footer">
       <div class="wrap site-footer__inner">
-        <span>XEditor · collaborative block editor for WebXDC</span>
+        <span>XEditor · v__XEDITOR_VERSION__ · collaborative block editor for WebXDC</span>
         <span>
           <a href="./app/">Demo</a>
           ·
-          <a href="https://github.com/omidz4t/xeditor/releases">Releases</a>
+          <a href="./versions.html">Versions</a>
+          ·
+          <a href="__XEDITOR_RELEASE_URL__">Release</a>
           ·
           <a href="https://webxdc.org/">WebXDC</a>
           ·
