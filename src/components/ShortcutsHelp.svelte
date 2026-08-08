@@ -62,6 +62,11 @@ import X from '@lucide/svelte/icons/x'
           keys: formatShortcut('Mod', 'N'),
           keywords: ['page', 'new', 'note', 'document'],
         },
+        {
+          action: 'Full width / full screen (via command palette)',
+          keys: formatShortcut('Mod', 'K'),
+          keywords: ['full', 'width', 'fullscreen', 'layout', 'maximize', 'palette'],
+        },
       ],
     },
     {

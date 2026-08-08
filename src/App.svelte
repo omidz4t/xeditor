@@ -1,5 +1,6 @@
 <script lang="ts">
 import { tick } from 'svelte'
+import { writable } from 'svelte/store'
 import { portal } from './lib/portal'
 
 /** Comment toast enter/leave — mirrors Vue Transition name="comment-toast". */
@@ -178,6 +179,16 @@ let pageIcon = $state<string | undefined>(undefined)
 let pageCover = $state<string | undefined>(undefined)
 /** Current page layout. Original/default is container (not full width). */
 let pageFullWidth = $state(false)
+const pageFullWidthStore = writable(false)
+$effect(() => {
+  pageFullWidthStore.set(pageFullWidth)
+})
+/** Browser Fullscreen API state (command palette: Enter/Exit full screen). */
+let isBrowserFullScreen = $state(false)
+const isFullScreenStore = writable(false)
+$effect(() => {
+  isFullScreenStore.set(isBrowserFullScreen)
+})
 let pages = $state<PageMeta[]>([])
 let currentPageId = $state('')
 let rootPageId = $state('')
@@ -281,6 +292,26 @@ $effect(() => {
   }
 })
 
+function togglePageFullWidth() {
+  onPageLayoutChange(pageFullWidth ? 'container' : 'full')
+}
+
+async function toggleBrowserFullScreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
+    } else {
+      await document.exitFullscreen()
+    }
+  } catch (err) {
+    console.warn('[app] fullscreen toggle failed', err)
+  }
+}
+
+function onFullscreenChange() {
+  isBrowserFullScreen = !!document.fullscreenElement
+}
+
 const appCommandsApi = useAppCommands({
   onOpenSettings: () => {
     openSettings(null)
@@ -297,6 +328,14 @@ const appCommandsApi = useAppCommands({
   onCreatePage: () => {
     onNewPage()
   },
+  onToggleFullWidth: () => {
+    togglePageFullWidth()
+  },
+  onToggleFullScreen: () => {
+    void toggleBrowserFullScreen()
+  },
+  pageFullWidth: pageFullWidthStore,
+  isFullScreen: isFullScreenStore,
   onOpenShortcuts: () => {
     shortcutsOpen = true
   },
@@ -1433,6 +1472,8 @@ async function mountApp() {
   mounted = true
 
   window.addEventListener('keydown', onGlobalKeydown, { capture: true })
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  isBrowserFullScreen = !!document.fullscreenElement
 
   session = await createCollabSession({
     requestSyncMode: requestSyncModeFromUser,
@@ -1521,6 +1562,7 @@ $effect(() => {
 
 function unmountApp() {
   window.removeEventListener('keydown', onGlobalKeydown, { capture: true })
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
   if (commentToastTimer) clearTimeout(commentToastTimer)
   dismissFollowInvite()
   stopPeers?.()
