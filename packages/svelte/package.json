@@ -1,6 +1,6 @@
 {
   "name": "@xproeditor/svelte",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Notion-like block editor for Svelte 5 — sticky format toolbar and/or floating bubble toolbar + slash menu.",
   "type": "module",
   "license": "MIT",
