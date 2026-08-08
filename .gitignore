@@ -115,7 +115,6 @@ service-account*.json
 .serverless/
 .webpack/
 
-# Screenshot script may write large trial outputs; committed docs/screenshots/*.jpg are intentional.
-# Uncomment to ignore generated shots locally:
-# docs/screenshots/*.jpg
-# docs/screenshots/manifest.json
+# Screenshots are CI/local artifacts only — never commit (also stripped from history)
+docs/screenshots/
+dist/screenshots/
