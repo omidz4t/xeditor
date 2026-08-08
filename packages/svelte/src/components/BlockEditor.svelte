@@ -2105,24 +2105,54 @@ function openExternalLinkModal(url: string) {
   window.addEventListener('keydown', externalLinkModalKeyHandler, true)
 }
 
+/**
+ * Open an external URL in a **new tab/window**.
+ * Never navigates the current document (browser demo must stay open).
+ * Prefer calling this synchronously from a click handler.
+ */
+function openUrlInNewTab(url: string): boolean {
+  // 1) window.open — works when still inside a user gesture
+  try {
+    const opened = window.open(url, '_blank', 'noopener,noreferrer')
+    if (opened) {
+      try {
+        opened.opener = null
+      } catch {
+        // ignore
+      }
+      return true
+    }
+  } catch {
+    // fall through
+  }
+
+  // 2) Synthetic <a target="_blank"> — still a new tab, never same-page
+  try {
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    return true
+  } catch {
+    return false
+  }
+}
+
 function openExternalLinkInBrowser() {
   const modal = externalLinkModal
   if (!modal) return
   const url = modal.url
-  closeExternalLinkModal()
-  try {
-    const opened = window.open(url, '_blank', 'noopener,noreferrer')
-    if (!opened) {
-      // Popup blocked — try top-level navigation as last resort in browser hosts.
-      window.location.assign(url)
-    }
-  } catch {
-    try {
-      window.location.assign(url)
-    } catch {
-      // Restricted webview: leave closed; user can re-open and copy.
-    }
+  // Open first (keep user-gesture), then close the modal — never location.assign.
+  const ok = openUrlInNewTab(url)
+  if (ok) {
+    closeExternalLinkModal()
   }
+  // If both methods fail (locked-down webview), leave the modal open so the
+  // user can Copy the URL.
 }
 
 async function copyExternalLink() {
