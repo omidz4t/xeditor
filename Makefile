@@ -1,4 +1,4 @@
-.PHONY: help install dev run dev-sim build build-debug build-pages typecheck clean webxdc build-xdc version-dry version-bump version-release
+.PHONY: help install dev run dev-sim build build-debug build-pages typecheck clean webxdc build-xdc version-dry version-bump version-release screenshots screenshots-full
 
 .DEFAULT_GOAL := help
 
@@ -26,6 +26,7 @@ help:
 	@echo "  make version-bump  Apply version bump to package.json + manifest"
 	@echo "  make version-release  Bump + CHANGELOG + commit + tag"
 	@echo "  make screenshots   Capture small UI JPEGs via Puppeteer → docs/screenshots/"
+	@echo "  make screenshots-full  Full-screen (1920×1080) shots, no crops"
 	@echo "  make clean         Remove dist/, dist-xdc/, and dist-pages/"
 	@echo ""
 	@echo "  Font packages after build (Shabnam + Arad):"
@@ -96,6 +97,9 @@ version-release:
 
 screenshots:
 	$(NPM) run screenshots
+
+screenshots-full:
+	$(NPM) run screenshots:full
 
 clean:
 	rm -rf dist dist-xdc dist-pages _site node_modules/.tmp
