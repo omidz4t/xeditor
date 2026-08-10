@@ -1,6 +1,6 @@
 {
   "name": "@xproeditor/svelte",
-  "version": "0.1.20",
+  "version": "0.1.21",
   "description": "Block editor for Svelte 5 — sticky format toolbar and/or floating bubble toolbar + slash menu.",
   "type": "module",
   "license": "MIT",
