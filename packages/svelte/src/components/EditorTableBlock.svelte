@@ -180,12 +180,22 @@
 
   function ensureManageColWidths() {
     const cols = manageColCount()
-    const next = manageColWidths.slice(0, cols)
-    while (next.length < cols) next.push(MANAGE_COL_MIN_PX)
-    for (let i = 0; i < next.length; i += 1) {
-      if (!Number.isFinite(next[i]) || next[i] < MANAGE_COL_MIN_PX) next[i] = MANAGE_COL_MIN_PX
+    const prev = manageColWidths
+    let changed = prev.length !== cols
+    const next = prev.slice(0, cols)
+    while (next.length < cols) {
+      next.push(MANAGE_COL_MIN_PX)
+      changed = true
     }
-    manageColWidths = next
+    for (let i = 0; i < next.length; i += 1) {
+      if (!Number.isFinite(next[i]) || next[i]! < MANAGE_COL_MIN_PX) {
+        next[i] = MANAGE_COL_MIN_PX
+        changed = true
+      }
+    }
+    // Avoid assigning a new array when unchanged — prevents $effect infinite loops
+    // (effect_update_depth_exceeded) when this runs inside reactive effects.
+    if (changed) manageColWidths = next
   }
 
   function manageColStyle(colIdx: number): string {
@@ -336,31 +346,28 @@
     }
   }
 
+  // Side-effects only when the manager opens/closes. Do not write $state here on
+  // the closed path (assigning manageSelected = [] re-triggered this effect and
+  // caused effect_update_depth_exceeded when closing).
   $effect(() => {
-    const open = manageOpen
-    if (open) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', onManageKeydown, true)
-      ensureManageColWidths()
-      return () => {
-        document.body.style.overflow = ''
-        window.removeEventListener('keydown', onManageKeydown, true)
-      }
+    if (!manageOpen) return
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onManageKeydown, true)
+    ensureManageColWidths()
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onManageKeydown, true)
+      manageResizeCleanup?.()
+      manageResizeCleanup = null
     }
-    document.body.style.overflow = ''
-    window.removeEventListener('keydown', onManageKeydown, true)
-    manageSelected = []
-    manageAnchor = null
-    manageResizeCleanup?.()
-    manageResizeCleanup = null
   })
 
+  // Keep column-width slots in sync while open (col add/remove / block patch).
   $effect(() => {
-    const open = manageOpen
-    const cols = open ? manageColCount() : 0
-    void cols
+    if (!manageOpen) return
+    void manageColCount()
     void block
-    if (open) ensureManageColWidths()
+    ensureManageColWidths()
   })
 
   onDestroy(() => {
