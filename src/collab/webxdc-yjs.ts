@@ -694,9 +694,11 @@ export async function createCollabSession(
     const canBootstrap =
       currentSyncMode === 'local' || webxdc.isAppSender || !chatOutbound
     if (canBootstrap) {
-      // Local mode: never pull package bootstrap — empty or IDB only.
-      const bootstrap =
-        currentSyncMode === 'local' ? null : await fetchBootstrapDocument()
+      // Prefer document-bootstrap.json when the package was exported with seed
+      // data (Export WebXDC / share as .xdc). Applies in every mode — including
+      // local — but only when Y is still empty (and local IDB had nothing).
+      // Subsequent opens keep IDB / chat history and skip this path.
+      const bootstrap = await fetchBootstrapDocument()
       const seed = ensureUsableDocument(bootstrap ?? createEmptyDocument())
       suppressObserveEmit = true
       syncDocumentToY(doc, { version: 2, pages: {} }, seed, LOCAL_ORIGIN)
@@ -708,8 +710,9 @@ export async function createCollabSession(
       await waitForYDocumentContent(doc, INIT_WAIT_EXTRA_MS, REMOTE_ORIGINS)
       refreshFromY()
       if (!hasYDocumentContent(doc)) {
-        // Offline non-sender edge case — create a local seed so the UI is usable.
-        const seed = createEmptyDocument()
+        // Offline non-sender edge case — try package seed, else empty workspace.
+        const bootstrap = await fetchBootstrapDocument()
+        const seed = ensureUsableDocument(bootstrap ?? createEmptyDocument())
         suppressObserveEmit = true
         syncDocumentToY(doc, { version: 2, pages: {} }, seed, LOCAL_ORIGIN)
         refreshFromY()

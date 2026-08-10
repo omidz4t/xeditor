@@ -304,7 +304,15 @@ export async function exportWorkspaceWebxdc(
     const blob = await buildWebxdcPackageBlob(serializeDocument(doc), xdcName)
     downloadBlob(blob, xdcName)
     return { ok: true }
-  } catch {
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    if (msg === 'pack-dev-index' || msg === 'pack-not-production') {
+      return {
+        ok: false,
+        reason:
+          'WebXDC export needs the packaged app (make build / open the .xdc in Delta Chat), not the Vite dev server.',
+      }
+    }
     return { ok: false, reason: 'Could not build a WebXDC package. Rebuild the app and try again.' }
   }
 }

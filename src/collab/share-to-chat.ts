@@ -70,7 +70,11 @@ export async function shareWebxdcWithDocumentToChat(
     })
 
     return { ok: true }
-  } catch {
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    if (msg === 'pack-dev-index' || msg === 'pack-not-production') {
+      return { ok: false, reason: 'not-packaged' }
+    }
     return { ok: false, reason: 'pack-failed' }
   }
 }

@@ -10,6 +10,9 @@
  * - Do NOT use CSS @import chains (nested .css often arrives as text/plain and
  *   Chromium refuses to apply them). Write one flat fonts/fonts.css with all
  *   @font-face rules and correct relative font URLs.
+ * - ALSO inline that CSS into index.html as <style>: some DC versions still
+ *   serve standalone .css as text/plain + nosniff, so <link rel=stylesheet>
+ *   is rejected even for a single flat sheet.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -31,6 +34,8 @@ function collectFiles(dir, base = dir, into = {}) {
   for (const name of readdirSync(dir)) {
     // Screenshots / docs are for the site build, not the .xdc payload
     if (name === 'screenshots') continue
+    // Host injects webxdc.js in Delta Chat; browser mock must never ship in .xdc
+    if (name === 'webxdc.js') continue
     const abs = join(dir, name)
     const st = statSync(abs)
     if (st.isDirectory()) {
@@ -43,11 +48,28 @@ function collectFiles(dir, base = dir, into = {}) {
   return into
 }
 
+/**
+ * Embed a complete file list so runtime re-export (Export WebXDC / share as .xdc)
+ * packs fonts and assets without re-parsing index.html (which omits CSS url()s).
+ */
+function writePackageManifest(files) {
+  const names = Object.keys(files)
+    .filter((name) => name !== 'package-manifest.json')
+    .sort()
+  // package-manifest.json is always present in the zip
+  names.push('package-manifest.json')
+  names.sort()
+  files['package-manifest.json'] = new Uint8Array(
+    Buffer.from(JSON.stringify({ version: 1, files: names }, null, 2), 'utf8'),
+  )
+}
+
 function zipTo(path, files) {
+  writePackageManifest(files)
   const zipped = zipSync(files, { level: 6 })
   writeFileSync(path, zipped)
   const kb = (zipped.byteLength / 1024).toFixed(0)
-  console.log(`  wrote ${relative(root, path)} (${kb} KB)`)
+  console.log(`  wrote ${relative(root, path)} (${kb} KB, ${Object.keys(files).length} files)`)
 }
 
 function deleteKeys(files, keys) {
@@ -70,6 +92,50 @@ function rewriteFontUrls(css, subdir) {
     /url\(\s*(['"]?)\.\/([^'")]+)\1\s*\)/g,
     (_m, q, file) => `url(${q}./${subdir}/${file}${q})`,
   )
+}
+
+/**
+ * fonts/fonts.css paths are relative to fonts/ (`./arad/…`).
+ * Inlined into index.html they must be document-root relative (`./fonts/arad/…`).
+ */
+function rewriteFontCssForDocumentRoot(css) {
+  if (/url\(\s*['"]?\.\/fonts\//.test(css)) return css
+  return css.replace(
+    /url\(\s*(['"]?)\.\/([^'")]+)\1\s*\)/g,
+    (_m, q, path) => `url(${q}./fonts/${path}${q})`,
+  )
+}
+
+/**
+ * Delta Chat webxdc:// often serves standalone .css as text/plain + nosniff,
+ * so Chromium refuses <link rel=stylesheet>. Inline @font-face into index.html
+ * (text/html) — font binaries still load as .woff2 files.
+ */
+function inlineFontsIntoIndex(files, fontsCssText) {
+  const indexKey = 'index.html'
+  if (!files[indexKey]) {
+    throw new Error('index.html missing from package files')
+  }
+  let html = Buffer.from(files[indexKey]).toString('utf8')
+
+  html = html.replace(
+    /<link\b[^>]*href=["'][^"']*fonts\/fonts\.css["'][^>]*>\s*/gi,
+    '',
+  )
+  html = html.replace(
+    /<!-- webxdc-fonts -->[\s\S]*?<!-- \/webxdc-fonts -->\s*/gi,
+    '',
+  )
+
+  const css = rewriteFontCssForDocumentRoot(fontsCssText)
+  const block =
+    `<!-- webxdc-fonts -->\n<style>\n${css.trim()}\n</style>\n<!-- /webxdc-fonts -->\n`
+
+  if (!/<\/head>/i.test(html)) {
+    throw new Error('index.html has no </head> — cannot inline fonts')
+  }
+  html = html.replace(/<\/head>/i, `${block}</head>`)
+  files[indexKey] = new Uint8Array(Buffer.from(html, 'utf8'))
 }
 
 function readFontCss(relPath) {
@@ -101,6 +167,14 @@ function stripExtraFontCss(files) {
   ])
 }
 
+function applyFontsToPackage(files, flatCss) {
+  files['fonts/fonts.css'] = new Uint8Array(Buffer.from(flatCss, 'utf8'))
+  stripExtraFontCss(files)
+  // Primary load path: inline into HTML (avoids CSS MIME rejection on webxdc://).
+  // Keep fonts/fonts.css for re-export tooling / path walking.
+  inlineFontsIntoIndex(files, flatCss)
+}
+
 /** Full package: Arad only (all weights) — no Shabnam. */
 function packageFull() {
   const files = collectFiles(dist)
@@ -110,16 +184,13 @@ function packageFull() {
     if (key.startsWith('fonts/shabnam/')) delete files[key]
   }
 
-  files['fonts/fonts.css'] = new Uint8Array(
-    Buffer.from(
-      buildFlatFontsCss({
-        aradFile: 'arad/arad-full.css',
-        label: 'Full: Arad only (all weights)',
-      }),
-      'utf8',
-    ),
+  applyFontsToPackage(
+    files,
+    buildFlatFontsCss({
+      aradFile: 'arad/arad-full.css',
+      label: 'Full: Arad only (all weights)',
+    }),
   )
-  stripExtraFontCss(files)
 
   mkdirSync(outDir, { recursive: true })
   zipTo(join(outDir, 'editor-full.xdc'), files)
@@ -151,25 +222,55 @@ function packageLite() {
     ]),
   )
 
-  files['fonts/fonts.css'] = new Uint8Array(
-    Buffer.from(
-      buildFlatFontsCss({
-        shabnamFile: 'shabnam/shabnam-lite.css',
-        aradFile: 'arad/arad-lite.css',
-        label: 'Lite: Shabnam + Arad (Regular + Bold)',
-      }),
-      'utf8',
-    ),
+  applyFontsToPackage(
+    files,
+    buildFlatFontsCss({
+      shabnamFile: 'shabnam/shabnam-lite.css',
+      aradFile: 'arad/arad-lite.css',
+      label: 'Lite: Shabnam + Arad (Regular + Bold)',
+    }),
   )
-  stripExtraFontCss(files)
 
   mkdirSync(outDir, { recursive: true })
   zipTo(join(outDir, 'editor-lite.xdc'), files)
 }
 
+/** Keep dist/ package-manifest in sync so browser re-export can list fonts. */
+function writeDistPackageManifest() {
+  const files = collectFiles(dist)
+  // Manifest lists on-disk dist files (may still use nested @import CSS;
+  // runtime pack-webxdc flattens when re-exporting).
+  writePackageManifest(files)
+  writeFileSync(
+    join(dist, 'package-manifest.json'),
+    Buffer.from(files['package-manifest.json']),
+  )
+  console.log(
+    `  wrote dist/package-manifest.json (${JSON.parse(Buffer.from(files['package-manifest.json']).toString('utf8')).files.length} paths)`,
+  )
+}
+
+/**
+ * vite preview / plain static servers need a browser mock; Delta Chat injects
+ * its own webxdc.js and must never receive this file inside .xdc (excluded above).
+ */
+function writeBrowserWebxdcMock() {
+  const mockPath = join(root, 'src/dev/webxdc-mock-idb.js')
+  if (!existsSync(mockPath)) {
+    console.warn('  skip dist/webxdc.js — mock missing at src/dev/webxdc-mock-idb.js')
+    return
+  }
+  const body =
+    `/* Browser preview mock — IndexedDB-backed. Not used inside real WebXDC hosts. */\n${readFileSync(mockPath, 'utf8')}`
+  writeFileSync(join(dist, 'webxdc.js'), body)
+  console.log('  wrote dist/webxdc.js (browser mock for vite preview)')
+}
+
 console.log('Packaging WebXDC font variants…')
 packageFull()
 packageLite()
+writeDistPackageManifest()
+writeBrowserWebxdcMock()
 console.log('Done.')
 console.log('  full → dist-xdc/editor-full.xdc (also app.xdc) — Arad only, all weights')
 console.log('  lite → dist-xdc/editor-lite.xdc — Shabnam + Arad (Regular + Bold woff2)')

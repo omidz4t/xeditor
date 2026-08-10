@@ -11,6 +11,9 @@ export const REQUIRED_PACKAGE_FILES = [
   'icon.png',
 ] as const
 
+/** Host injects this; never ship or require it inside re-exported .xdc packages. */
+export const HOST_PROVIDED_PACKAGE_FILES = ['webxdc.js'] as const
+
 export const extractAssetPathsFromHtml = (html: string): string[] => {
   const paths = new Set<string>(REQUIRED_PACKAGE_FILES)
   const pattern = /(?:src|href)=["']([^"']+)["']/gi
@@ -22,10 +25,19 @@ export const extractAssetPathsFromHtml = (html: string): string[] => {
       || ref.startsWith('data:')
       || ref.startsWith('http')
       || ref.startsWith('//')
+      // Vite dev absolute paths (/src/main.ts, /@vite/client) — never package.
+      || ref.startsWith('/')
+      || ref.includes('@vite')
+      || ref.endsWith('.ts')
     ) {
       continue
     }
-    paths.add(ref.replace(/^\.\//, ''))
+    const path = ref.replace(/^\.\//, '')
+    // Delta Chat provides webxdc.js; omit from package file lists.
+    if ((HOST_PROVIDED_PACKAGE_FILES as readonly string[]).includes(path)) {
+      continue
+    }
+    paths.add(path)
   }
 
   return [...paths]
