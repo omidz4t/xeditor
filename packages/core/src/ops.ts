@@ -100,6 +100,18 @@ copy.id = generateBlockId()
   return copy
 }
 
+/** Raise every block’s indent by `base` (for nesting under a toggle, etc.). */
+export function applyBaseIndent(blocks: Block[], base: number): Block[] {
+  if (!base || base === 0) return blocks
+  return blocks.map((block) => ({
+    ...block,
+    props: {
+      ...block.props,
+      indent: (block.props.indent ?? 0) + base,
+    },
+  }))
+}
+
 // ─── Span helpers ─────────────────────────────────────────────────────────────
 
 export function spansToText(spans: InlineSpan[]): string {

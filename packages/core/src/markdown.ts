@@ -3,9 +3,35 @@
  * Supports common GFM-ish constructs without external dependencies.
  */
 
-import { createBlock, normalizeSpans } from './ops'
+import { applyBaseIndent, createBlock, normalizeSpans } from './ops'
 import { normalizeTableData } from './table'
 import type { Block, BlockType, InlineMarks, InlineSpan, TableCell } from './types'
+
+/**
+ * Turn a loose HTML fragment (often wrapping markdown) into a text source
+ * markdownToBlocks can parse: block boundaries → newlines, list items → `- `.
+ */
+export function htmlFragmentToMarkdownSource(html: string): string {
+  let s = html.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  s = s.replace(/<br\s*\/?>/gi, '\n')
+  s = s.replace(/<\/(p|div|h[1-6]|tr|blockquote|section|article|pre)>/gi, '\n')
+  s = s.replace(/<li[^>]*>\s*/gi, '- ')
+  s = s.replace(/<\/li>/gi, '\n')
+  s = s.replace(/<\/?(ul|ol)[^>]*>/gi, '\n')
+  s = s.replace(/<hr\s*\/?>/gi, '\n---\n')
+  // Drop remaining tags but keep text (summary already removed by caller).
+  s = s.replace(/<[^>]+>/g, '')
+  s = s
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+  s = s.replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n')
+  s = s.replace(/\n{3,}/g, '\n\n')
+  return s.trim()
+}
 
 /** True when plain text likely contains markdown structure worth converting. */
 export function looksLikeMarkdown(text: string): boolean {
@@ -28,6 +54,8 @@ export function looksLikeMarkdown(text: string): boolean {
     || /~~[^~\n]+~~/.test(sample)
     || /`[^`\n]+`/.test(sample)
     || /^\|.+\|$/m.test(sample)
+    // HTML details (GitHub) → editor toggle / collapse
+    || /<details[\s>]/i.test(sample)
   )
 }
 
@@ -84,6 +112,49 @@ export function markdownToBlocks(source: string): Block[] {
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed) && trimmed.length >= 3) {
       out.push(createBlock('divider'))
       i++
+      continue
+    }
+
+    // HTML <details>…</details> → toggle (collapse); body is markdown (or HTML→md).
+    if (/^<details\b/i.test(trimmed)) {
+      const chunk: string[] = [line]
+      i++
+      let depth = (trimmed.match(/<details\b/gi) || []).length
+        - (trimmed.match(/<\/details>/gi) || []).length
+      while (i < lines.length && depth > 0) {
+        const l = lines[i]
+        chunk.push(l)
+        depth += (l.match(/<details\b/gi) || []).length
+        depth -= (l.match(/<\/details>/gi) || []).length
+        i++
+      }
+      const html = chunk.join('\n')
+      const open = /\bopen\b/i.test(chunk[0] ?? '')
+      const summaryMatch = html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)
+      const titleRaw = summaryMatch
+        ? summaryMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+        : 'Toggle'
+      let bodyHtml = html
+      if (summaryMatch) bodyHtml = bodyHtml.replace(summaryMatch[0], '')
+      bodyHtml = bodyHtml
+        .replace(/<details\b[^>]*>/gi, '')
+        .replace(/<\/details>/gi, '')
+        .trim()
+      // Body may be raw markdown, or HTML wrapping markdown — normalize then parse.
+      const bodyMd = htmlFragmentToMarkdownSource(bodyHtml)
+      out.push(createBlock('toggle', {
+        content: parseInlineMarkdown(titleRaw || 'Toggle'),
+        props: { collapsed: !open },
+      }))
+      const nested = bodyMd ? markdownToBlocks(bodyMd) : []
+      if (nested.length) {
+        out.push(...applyBaseIndent(nested, 1))
+      } else {
+        out.push(createBlock('paragraph', {
+          content: [],
+          props: { indent: 1 },
+        }))
+      }
       continue
     }
 

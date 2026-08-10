@@ -1,5 +1,10 @@
 import { parseInlineNodes } from './html'
-import { createBlock, generateBlockId, normalizeSpans } from './ops'
+import {
+  htmlFragmentToMarkdownSource,
+  looksLikeMarkdown,
+  markdownToBlocks,
+} from './markdown'
+import { applyBaseIndent, createBlock, generateBlockId, normalizeSpans } from './ops'
 import { normalizeTableData, tableCellFromText } from './table'
 import type { Block, BlockType, InlineMarks, InlineSpan, TableCell } from './types'
 import { isBlocksContent } from './types'
@@ -288,6 +293,124 @@ export function tiptapToBlocks(doc: Record<string, unknown>): Block[] {
 
 // ─── HTML → blocks (client only, requires DOMParser) ─────────────────────────
 
+/** Block-level tags that open a new block when walking mixed HTML containers. */
+const HTML_BLOCK_TAGS = new Set([
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'p',
+  'blockquote',
+  'pre',
+  'ul',
+  'ol',
+  'hr',
+  'img',
+  'table',
+  'div',
+  'section',
+  'article',
+  'details',
+  'summary',
+])
+
+function indentProps(indent: number, el?: Element): Record<string, unknown> {
+  return {
+    ...(indent ? { indent } : {}),
+    ...(el ? propsWithDir(el) : {}),
+  }
+}
+
+/**
+ * Serialize details body DOM → text/markdown source.
+ * Preserves newlines at block boundaries so markdown lists/headings parse.
+ */
+function serializeDetailsBodyToSource(nodes: Node[], host: Element): string {
+  const doc = host.ownerDocument
+  if (!doc) {
+    return nodes
+      .map((n) => n.textContent ?? '')
+      .join('\n')
+      .trim()
+  }
+  const wrap = doc.createElement('div')
+  for (const n of nodes) {
+    wrap.appendChild(n.cloneNode(true))
+  }
+  return htmlFragmentToMarkdownSource(wrap.innerHTML)
+}
+
+/**
+ * Prefer markdown parse when the body still carries MD syntax (common when
+ * pasting GitHub-flavored docs: details wrap raw markdown, not full HTML).
+ * Use structural HTML path when the body is already real lists/headings/etc.
+ * *without* leftover MD markers.
+ */
+function shouldParseDetailsBodyAsMarkdown(source: string, bodyNodes: Node[]): boolean {
+  if (!source.trim()) return false
+  if (looksLikeMarkdown(source)) return true
+
+  // Structured HTML only (ul/ol/h*) → keep HTML conversion.
+  let hasStructuralHtml = false
+  for (const n of bodyNodes) {
+    if (n.nodeType !== Node.ELEMENT_NODE) continue
+    const tag = (n as Element).tagName.toLowerCase()
+    if (tag === 'ul' || tag === 'ol' || tag === 'table' || tag === 'pre' || /^h[1-6]$/.test(tag)) {
+      hasStructuralHtml = true
+      break
+    }
+    // Nested structural tags inside a wrapper
+    if ((n as Element).querySelector?.('ul, ol, table, pre, h1, h2, h3, h4, h5, h6')) {
+      hasStructuralHtml = true
+      break
+    }
+  }
+  if (hasStructuralHtml) return false
+
+  // Multi-line prose / bullets without classic MD markers still benefit from
+  // markdown line splitting (blank lines → paragraphs).
+  return source.includes('\n')
+}
+
+/**
+ * Walk a list of DOM nodes into blocks (paragraphs for loose inline runs).
+ * Used for container bodies (div/details) and mixed content.
+ */
+function convertHtmlNodes(nodes: Iterable<Node>, indent: number, out: Block[]): void {
+  let inlineBuffer: Node[] = []
+  const flush = () => {
+    if (inlineBuffer.length === 0) return
+    const spans = normalizeSpans(parseInlineNodes(inlineBuffer))
+    if (spans.some((s) => s.text.trim())) {
+      out.push(
+        createBlock('paragraph', {
+          content: spans,
+          props: indentProps(indent),
+        }),
+      )
+    }
+    inlineBuffer = []
+  }
+
+  for (const child of Array.from(nodes)) {
+    if (
+      child.nodeType === Node.ELEMENT_NODE
+      && HTML_BLOCK_TAGS.has((child as Element).tagName.toLowerCase())
+    ) {
+      flush()
+      convertHtmlElement(child as Element, indent, out)
+    } else if (child.nodeType === Node.TEXT_NODE && !(child.textContent ?? '').trim()) {
+      // skip pure whitespace between block children
+      continue
+    } else {
+      inlineBuffer.push(child)
+    }
+  }
+  flush()
+}
+
 function convertHtmlElement(el: Element, indent: number, out: Block[]): void {
   const tag = el.tagName.toLowerCase()
 
@@ -301,7 +424,7 @@ function convertHtmlElement(el: Element, indent: number, out: Block[]): void {
       const level = Math.min(Math.max(Number(tag[1]) || 1, 1), 6)
       out.push(createBlock(`heading_${level}` as BlockType, {
         content: normalizeSpans(parseInlineNodes(el.childNodes)),
-        props: propsWithDir(el),
+        props: indentProps(indent, el),
       }))
       break
     }
@@ -309,7 +432,7 @@ function convertHtmlElement(el: Element, indent: number, out: Block[]): void {
       const spans = normalizeSpans(parseInlineNodes(el.childNodes))
       out.push(createBlock('paragraph', {
         content: spans,
-        props: { ...(indent ? { indent } : {}), ...propsWithDir(el) },
+        props: indentProps(indent, el),
       }))
       break
     }
@@ -319,12 +442,12 @@ function convertHtmlElement(el: Element, indent: number, out: Block[]): void {
       if (paragraphs.length > 0) {
         paragraphs.forEach(p => out.push(createBlock('quote', {
           content: normalizeSpans(parseInlineNodes(p.childNodes)),
-          props: propsWithDir(p),
+          props: indentProps(indent, p),
         })))
       } else {
         out.push(createBlock('quote', {
           content: normalizeSpans(parseInlineNodes(el.childNodes)),
-          props: propsWithDir(el),
+          props: indentProps(indent, el),
         }))
       }
 
@@ -333,7 +456,11 @@ function convertHtmlElement(el: Element, indent: number, out: Block[]): void {
     case 'pre': {
       const codeEl = el.querySelector('code')
       out.push(createBlock('code', {
-        props: { language: 'plaintext', code: (codeEl ?? el).textContent ?? '' },
+        props: {
+          language: 'plaintext',
+          code: (codeEl ?? el).textContent ?? '',
+          ...(indent ? { indent } : {}),
+        },
       }))
       break
     }
@@ -350,7 +477,7 @@ continue
         const inlineNodes = Array.from(li.childNodes).filter(n => !nestedLists.includes(n as Element))
         out.push(createBlock(itemType, {
           content: normalizeSpans(parseInlineNodes(inlineNodes)),
-          props: { ...(indent ? { indent } : {}), ...propsWithDir(li) },
+          props: indentProps(indent, li),
         }))
 
         for (const nested of nestedLists) {
@@ -361,14 +488,20 @@ convertHtmlElement(nested, indent + 1, out)
       break
     }
     case 'hr':
-      out.push(createBlock('divider'))
+      out.push(createBlock('divider', { props: indent ? { indent } : {} }))
       break
     case 'img': {
       const src = el.getAttribute('src')
 
       if (src) {
-out.push(createBlock('image', { props: { url: src, caption: el.getAttribute('alt') ?? '' } }))
-}
+        out.push(createBlock('image', {
+          props: {
+            url: src,
+            caption: el.getAttribute('alt') ?? '',
+            ...(indent ? { indent } : {}),
+          },
+        }))
+      }
 
       break
     }
@@ -391,9 +524,86 @@ rows.push(cells)
       })
 
       if (rows.length) {
-out.push(createBlock('table', { props: { table: normalizeTableData({ hasHeader, rows }) } }))
-}
+        out.push(createBlock('table', {
+          props: {
+            table: normalizeTableData({ hasHeader, rows }),
+            ...(indent ? { indent } : {}),
+          },
+        }))
+      }
 
+      break
+    }
+    /**
+     * GitHub / MD details → editor toggle (collapse).
+     * Summary → title. Body is often *raw markdown* inside HTML (or mixed);
+     * parse as markdown when it looks like MD so lists/headings/bold apply.
+     */
+    case 'details': {
+      let summaryEl: Element | null = null
+      const bodyNodes: Node[] = []
+      for (const child of Array.from(el.childNodes)) {
+        if (
+          child.nodeType === Node.ELEMENT_NODE
+          && (child as Element).tagName.toLowerCase() === 'summary'
+        ) {
+          summaryEl = child as Element
+        } else {
+          bodyNodes.push(child)
+        }
+      }
+
+      const titleSpans = summaryEl
+        ? normalizeSpans(parseInlineNodes(summaryEl.childNodes))
+        : []
+      const hasTitle = titleSpans.some((s) => (s.text ?? '').trim())
+      // Absent `open` → start collapsed (matches common MD/details UX).
+      const collapsed = !el.hasAttribute('open')
+
+      out.push(
+        createBlock('toggle', {
+          content: hasTitle ? titleSpans : [{ text: 'Toggle' }],
+          props: {
+            ...indentProps(indent, el),
+            collapsed,
+          },
+        }),
+      )
+
+      const bodySource = serializeDetailsBodyToSource(bodyNodes, el)
+      const before = out.length
+
+      if (bodySource.trim() && shouldParseDetailsBodyAsMarkdown(bodySource, bodyNodes)) {
+        const nested = markdownToBlocks(bodySource)
+        if (nested.length) {
+          out.push(...applyBaseIndent(nested, indent + 1))
+        }
+      } else {
+        convertHtmlNodes(bodyNodes, indent + 1, out)
+      }
+
+      // Empty body: leave a nested paragraph so the toggle can hold content.
+      if (out.length === before) {
+        out.push(
+          createBlock('paragraph', {
+            content: [],
+            props: { indent: indent + 1 },
+          }),
+        )
+      }
+      break
+    }
+    case 'summary': {
+      // Orphan summary (outside details) — plain paragraph.
+      const spans = normalizeSpans(parseInlineNodes(el.childNodes))
+      if (spans.some((s) => s.text.trim())) {
+        out.push(
+          createBlock('paragraph', {
+            content: spans,
+            props: indentProps(indent, el),
+          }),
+        )
+      }
       break
     }
     case 'div':
@@ -405,36 +615,15 @@ out.push(createBlock('table', { props: { table: normalizeTableData({ hasHeader, 
         const spans = normalizeSpans(parseInlineNodes(el.childNodes))
 
         if (spans.length) {
-out.push(createBlock('paragraph', { content: spans }))
-}
+          out.push(
+            createBlock('paragraph', {
+              content: spans,
+              props: indentProps(indent, el),
+            }),
+          )
+        }
       } else {
-        // Mixed content: walk child nodes, wrapping loose inline runs in paragraphs
-        let inlineBuffer: Node[] = []
-        const flush = () => {
-          if (inlineBuffer.length === 0) {
-return
-}
-
-          const spans = normalizeSpans(parseInlineNodes(inlineBuffer))
-
-          if (spans.some(s => s.text.trim())) {
-out.push(createBlock('paragraph', { content: spans }))
-}
-
-          inlineBuffer = []
-        }
-        const blockTags = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'blockquote', 'pre', 'ul', 'ol', 'hr', 'img', 'table', 'div', 'section', 'article'])
-
-        for (const child of Array.from(el.childNodes)) {
-          if (child.nodeType === Node.ELEMENT_NODE && blockTags.has((child as Element).tagName.toLowerCase())) {
-            flush()
-            convertHtmlElement(child as Element, indent, out)
-          } else {
-            inlineBuffer.push(child)
-          }
-        }
-
-        flush()
+        convertHtmlNodes(el.childNodes, indent, out)
       }
 
       break
@@ -443,8 +632,13 @@ out.push(createBlock('paragraph', { content: spans }))
       const spans = normalizeSpans(parseInlineNodes([el]))
 
       if (spans.some(s => s.text.trim())) {
-out.push(createBlock('paragraph', { content: spans }))
-}
+        out.push(
+          createBlock('paragraph', {
+            content: spans,
+            props: indentProps(indent),
+          }),
+        )
+      }
     }
   }
 }
