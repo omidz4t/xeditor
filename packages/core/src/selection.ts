@@ -264,22 +264,75 @@ export function deleteTextRange(
   }
 }
 
+/**
+ * True when a non-text block sits strictly between the range’s text endpoints
+ * in visible order (e.g. an image between two paragraphs in a multi-block select).
+ */
+export function isNonTextBlockCoveredByRange(
+  blockId: string,
+  range: TextRangeSelection,
+  visibleBlocks: Block[],
+): boolean {
+  const normalized = normalizeTextRange(range, visibleBlocks)
+  if (!normalized || normalized.startBlockId === normalized.endBlockId) {
+    return false
+  }
+
+  const startVis = visibleBlocks.findIndex((b) => b.id === normalized.startBlockId)
+  const endVis = visibleBlocks.findIndex((b) => b.id === normalized.endBlockId)
+  const idx = visibleBlocks.findIndex((b) => b.id === blockId)
+
+  if (startVis < 0 || endVis < 0 || idx < 0) {
+    return false
+  }
+  if (idx <= startVis || idx >= endVis) {
+    return false
+  }
+
+  const block = visibleBlocks[idx]
+  return !isTextBlock(block.type)
+}
+
 /** Extract selected content as blocks for clipboard (cloned with new ids). */
 export function extractTextRangeAsBlocks(
   range: TextRangeSelection,
   blocks: Block[],
   visibleBlocks: Block[],
 ): Block[] {
+  const normalized = normalizeTextRange(range, visibleBlocks)
+  if (!normalized || isTextRangeCollapsed(range, visibleBlocks)) {
+    return []
+  }
+
+  const startVis = visibleBlocks.findIndex((b) => b.id === normalized.startBlockId)
+  const endVis = visibleBlocks.findIndex((b) => b.id === normalized.endBlockId)
+  if (startVis < 0 || endVis < 0) {
+    return []
+  }
+
   const segments = getTextRangeSegments(range, blocks, visibleBlocks)
+  const segmentById = new Map(segments.map((s) => [s.blockId, s]))
+  const out: Block[] = []
 
-  return segments.map((segment) => {
-    const content = sliceSpans(segment.block.content, segment.start, segment.end)
+  for (let i = startVis; i <= endVis; i++) {
+    const visible = visibleBlocks[i]
+    const live = blocks.find((b) => b.id === visible.id) ?? visible
 
-    return cloneBlock({
-      ...segment.block,
-      content,
-    })
-  })
+    if (isTextBlock(live.type)) {
+      const segment = segmentById.get(live.id)
+      if (!segment) continue
+      const content = sliceSpans(segment.block.content, segment.start, segment.end)
+      out.push(cloneBlock({ ...segment.block, content }))
+      continue
+    }
+
+    // Non-text (image, table, divider, …) between text endpoints — include whole block.
+    if (i > startVis && i < endVis) {
+      out.push(cloneBlock(live))
+    }
+  }
+
+  return out
 }
 
 /** True when every segment in range is a full block (whole-block selection). */

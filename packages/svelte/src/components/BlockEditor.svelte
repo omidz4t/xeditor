@@ -25,6 +25,7 @@ import {
   getTextRangeSegments,
   isBlockFullySelected,
   isCrossBlockTextRange,
+  isNonTextBlockCoveredByRange,
   isTextRangeCollapsed,
   rangeHasMarkAcrossSegments,
   rangeMarkValueAcrossSegments,
@@ -443,41 +444,110 @@ function setManagedTextRange(anchor: TextPoint, focus: TextPoint) {
   window.getSelection()?.removeAllRanges()
 }
 
-/** Select the entire page (all visible text from first → last block). */
+/**
+ * Select the entire page: every visible block (text + images/tables/…).
+ * Text blocks also get a managed text range for blue selection highlight.
+ * Non-text must be multi-selected so Delete/Cut removes them too (text-range
+ * alone only spans first→last *text* block and skips trailing/leading media).
+ */
 function selectAllBlocks() {
-  const range = fullBlockTextRange(visibleBlocks)
-
-  if (range) {
-    setManagedTextRange(range.anchor, range.focus)
-    void tick().then(() => rootEl?.focus())
+  if (visibleBlocks.length === 0) {
     return
   }
 
-  // Page has no text blocks (e.g. only images) — multi-select every visible block.
-  if (visibleBlocks.length > 0) {
-    setSelectedBlocks(visibleBlocks.map((b) => b.id))
-    void tick().then(() => rootEl?.focus())
+  focusedBlockId = null
+  closeSlash()
+  bubble = null
+  window.getSelection()?.removeAllRanges()
+
+  // Multi-select all visible blocks first (images, tables, code, …).
+  setSelectedBlocks(visibleBlocks.map((b) => b.id))
+
+  const range = fullBlockTextRange(visibleBlocks)
+  if (range) {
+    // Do not call setManagedTextRange — it clears block multi-select.
+    textRangeSelection = range
+    managedTextSelection = true
+  } else {
+    textRangeSelection = null
+    managedTextSelection = false
   }
+
+  void tick().then(() => rootEl?.focus())
+}
+
+function allVisibleBlocksSelected(): boolean {
+  return (
+    visibleBlocks.length > 0
+    && visibleBlocks.every(
+      (b) => selectedBlockIds.includes(b.id) || selectedBlockId === b.id,
+    )
+  )
 }
 
 function deleteManagedTextRange() {
-  if (!textRangeSelection) {
+  // Ctrl+A (or equivalent): every visible block is selected — remove them all,
+  // including images/tables that sit outside the text-only range endpoints.
+  if (allVisibleBlocksSelected()) {
+    removeSelectedBlocksBulk()
+    clearTextRangeSelection()
     return
+  }
+
+  if (!textRangeSelection) {
+    if (selectedBlockIds.length > 0 || selectedBlockId) {
+      removeSelectedBlocksBulk()
+    }
+    return
+  }
+
+  // Non-text multi-selected alongside a text range (or covered between endpoints).
+  const extraNonTextIds = new Set<string>()
+  for (const id of selectedBlockIds) {
+    const b = byId(id)
+    if (b && !isTextBlock(b.type)) extraNonTextIds.add(id)
+  }
+  for (const b of visibleBlocks) {
+    if (
+      !isTextBlock(b.type)
+      && isNonTextBlockCoveredByRange(b.id, textRangeSelection, visibleBlocks)
+    ) {
+      extraNonTextIds.add(b.id)
+    }
   }
 
   const result = deleteTextRange(blocks, textRangeSelection, visibleBlocks)
 
+  // Intermediate non-text between text anchors is already removed by deleteTextRange.
+  // Drop any remaining multi-selected non-text (e.g. still present if layout differed).
+  for (const id of extraNonTextIds) {
+    const i = blocks.findIndex((b) => b.id === id)
+    if (i === -1) continue
+    const parentToggleIdx = findContainingToggleIndex(blocks, i)
+    blocks.splice(i, 1)
+    if (parentToggleIdx !== null) {
+      const parent = blocks[parentToggleIdx]
+      if (parent?.type === 'toggle') {
+        syncTogglePlaceholder(parent, { history: false })
+      }
+    }
+  }
+
   clearTextRangeSelection()
+  clearBlockSelection()
   ensureNotEmpty()
   pushHistory(true)
 
-  if (result) {
+  if (result && byId(result.focusBlockId)) {
     focusBlock(result.focusBlockId, result.focusOffset)
   } else {
-    const first = visibleBlocks[0]
-
+    const first = blocks[0]
     if (first) {
-      focusBlock(first.id, 'start')
+      if (isTextBlock(first.type) || first.type === 'code') {
+        focusBlock(first.id, 'start')
+      } else {
+        selectBlock(first.id)
+      }
     }
   }
 }
@@ -650,7 +720,18 @@ function clearBlockSelection() {
 }
 
 function isBlockSelected(id: string): boolean {
-  return selectedBlockIds.includes(id) || selectedBlockId === id
+  if (selectedBlockIds.includes(id) || selectedBlockId === id) {
+    return true
+  }
+  // Highlight non-text (image/table/…) between multi-block text selection endpoints.
+  if (
+    hasActiveManagedSelection()
+    && textRangeSelection
+    && isNonTextBlockCoveredByRange(id, textRangeSelection, visibleBlocks)
+  ) {
+    return true
+  }
+  return false
 }
 
 function hasBlockSelection(): boolean {
@@ -3551,12 +3632,42 @@ focusBlock(last.id, 'end')
 // ─── Clipboard (multi-block copy / cut / paste) ─────────────────────────────
 
 function getBlocksForClipboard(): Block[] | null {
+  // Full-page select (Ctrl+A): copy every selected block, including media.
+  if (allVisibleBlocksSelected()) {
+    const selected = selectedBlocksInOrder()
+    return selected.length > 0 ? selected.map((b) => cloneBlock(b)) : null
+  }
+
   if (hasActiveManagedSelection() && textRangeSelection) {
     const extracted = extractTextRangeAsBlocks(
       textRangeSelection,
       blocks,
       visibleBlocks,
     )
+
+    // Merge any multi-selected non-text outside the text-span extract.
+    const fromRange = new Set(extracted.map((b) => b.id))
+    const extras = selectedBlocksInOrder().filter(
+      (b) => !isTextBlock(b.type) && !fromRange.has(b.id),
+    )
+    if (extras.length > 0) {
+      const merged = [...extracted]
+      for (const extra of extras) {
+        const live = byId(extra.id) ?? extra
+        // Insert extras in document order
+        const idx = blocks.findIndex((b) => b.id === live.id)
+        let insertAt = merged.length
+        for (let i = 0; i < merged.length; i++) {
+          const mi = blocks.findIndex((b) => b.id === merged[i].id)
+          if (mi > idx) {
+            insertAt = i
+            break
+          }
+        }
+        merged.splice(insertAt, 0, cloneBlock(live))
+      }
+      return merged.length > 0 ? merged : null
+    }
 
     return extracted.length > 0 ? extracted : null
   }

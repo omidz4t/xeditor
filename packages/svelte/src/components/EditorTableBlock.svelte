@@ -230,7 +230,19 @@
     manageResizeCleanup = onUp
   }
 
-  function openDataManager() {
+  /** Mirror Vue `<Teleport to="body">` so the overlay is not trapped under editor layers. */
+  function portalToBody(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        node.remove()
+      },
+    }
+  }
+
+  function openDataManager(event?: Event) {
+    event?.preventDefault()
+    event?.stopPropagation()
     if (readonly) return
     manageSelected = []
     manageAnchor = null
@@ -238,7 +250,10 @@
     manageOpen = true
   }
 
-  function closeDataManager() {
+  function closeDataManager(event?: Event) {
+    event?.preventDefault()
+    event?.stopPropagation()
+    if (!manageOpen) return
     manageOpen = false
     manageSelected = []
     manageAnchor = null
@@ -554,7 +569,13 @@
             <Trash2 class="h-3.5 w-3.5" />
           </button>
         {/if}
-        <button type="button" class="etable-icon-btn" title="Open table data manager" aria-label="Open table data manager" onclick={openDataManager}>
+        <button
+          type="button"
+          class="etable-icon-btn"
+          title="Open table data manager"
+          aria-label="Open table data manager"
+          onclick={openDataManager}
+        >
           <Expand class="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
@@ -562,9 +583,23 @@
   </div>
 
   {#if manageOpen}
-    <div class="etable-manage-root" role="dialog" aria-modal="true" aria-label="Edit table">
-      <button type="button" class="etable-manage-backdrop" aria-label="Close" onclick={closeDataManager}></button>
-      <div class="etable-manage-panel">
+    <!-- Portaled to body (like Vue Teleport) so fixed overlay/close always receive clicks. -->
+    <div
+      class="etable-manage-root"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Edit table"
+      use:portalToBody
+      onpointerdown={(e) => e.stopPropagation()}
+      onclick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        class="etable-manage-backdrop"
+        aria-label="Close"
+        onclick={closeDataManager}
+      ></button>
+      <div class="etable-manage-panel" role="document">
         <div class="etable-manage-bar">
           <button type="button" class="etable-manage-tool" title="Add row" onclick={handleAddRow}>
             <Plus class="h-3.5 w-3.5" /> Row
@@ -576,7 +611,13 @@
             {table().hasHeader ? 'Header' : 'No header'}
           </button>
           <span class="etable-manage-spacer"></span>
-          <button type="button" class="etable-manage-tool etable-manage-tool--icon" aria-label="Close" title="Close" onclick={closeDataManager}>
+          <button
+            type="button"
+            class="etable-manage-tool etable-manage-tool--icon"
+            aria-label="Close"
+            title="Close"
+            onclick={closeDataManager}
+          >
             <X size={15} strokeWidth={2} />
           </button>
         </div>
@@ -709,23 +750,30 @@
   color: #ef4444;
 }
 .etable-manage-root {
+  /* After portal-to-body, fixed is relative to the viewport (not editor chrome). */
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: 50000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  pointer-events: auto;
 }
 .etable-manage-backdrop {
   position: absolute;
   inset: 0;
   border: none;
+  margin: 0;
+  padding: 0;
   background: rgb(15 15 15 / 0.28);
-  cursor: default;
+  cursor: pointer;
+  /* Ensure the full dimmer is the hit target for close. */
+  pointer-events: auto;
 }
 .etable-manage-panel {
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: min(80vw, 1000px);
@@ -737,6 +785,7 @@
   background: var(--xpe-background, #fff);
   border: 1px solid var(--xpe-border, #e9e9e7);
   box-shadow: 0 12px 32px rgb(15 15 15 / 0.12);
+  pointer-events: auto;
   overflow: hidden;
 }
 .etable-manage-bar {
