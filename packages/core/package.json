@@ -1,6 +1,6 @@
 {
   "name": "@xproeditor/core",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "Framework-agnostic engine for the XProEditor block editor: block model, selection, clipboard, HTML conversion, and table operations.",
   "type": "module",
   "license": "MIT",
