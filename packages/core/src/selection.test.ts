@@ -12,6 +12,7 @@ import {
   isTextRangeCollapsed,
   normalizeTextRange,
   rangeHasMarkAcrossSegments,
+  resolveArrowNavTarget,
 } from './selection'
 import type { Block } from './types'
 
@@ -172,5 +173,36 @@ describe('isCrossBlockTextRange', () => {
       { anchor: { blockId: 'a', offset: 1 }, focus: { blockId: 'a', offset: 1 } },
       blocks,
     )).toBe(true)
+  })
+})
+
+describe('resolveArrowNavTarget', () => {
+  const ids = ['a', 'b', 'c']
+
+  it('with no current id: Down → first, Up → last', () => {
+    expect(resolveArrowNavTarget(ids, null, 1)).toBe('a')
+    expect(resolveArrowNavTarget(ids, undefined, 1)).toBe('a')
+    expect(resolveArrowNavTarget(ids, null, -1)).toBe('c')
+  })
+
+  it('steps to next / previous', () => {
+    expect(resolveArrowNavTarget(ids, 'a', 1)).toBe('b')
+    expect(resolveArrowNavTarget(ids, 'b', 1)).toBe('c')
+    expect(resolveArrowNavTarget(ids, 'c', -1)).toBe('b')
+    expect(resolveArrowNavTarget(ids, 'b', -1)).toBe('a')
+  })
+
+  it('returns null at the edge (caller may create a block)', () => {
+    expect(resolveArrowNavTarget(ids, 'c', 1)).toBe(null)
+    expect(resolveArrowNavTarget(ids, 'a', -1)).toBe(null)
+  })
+
+  it('unknown current id falls back to edge', () => {
+    expect(resolveArrowNavTarget(ids, 'missing', 1)).toBe('a')
+    expect(resolveArrowNavTarget(ids, 'missing', -1)).toBe('c')
+  })
+
+  it('empty list → null', () => {
+    expect(resolveArrowNavTarget([], null, 1)).toBe(null)
   })
 })

@@ -27,6 +27,7 @@ import {
   isCrossBlockTextRange,
   isNonTextBlockCoveredByRange,
   isTextRangeCollapsed,
+  resolveArrowNavTarget,
   rangeHasMarkAcrossSegments,
   rangeMarkValueAcrossSegments,
   computeListNumbering,
@@ -1641,6 +1642,13 @@ $effect(() => {
   })
 })
 
+function onEditorPointerArm(e: PointerEvent) {
+  const t = e.target
+  if (t instanceof Node && rootEl && (t === rootEl || rootEl.contains(t))) {
+    armEditorSurface()
+  }
+}
+
 onMount(() => {
   normalizeLoadedBlocks()
   resetHistory()
@@ -1652,6 +1660,9 @@ onMount(() => {
   document.addEventListener('pointercancel', onDocPointerUp)
   document.addEventListener('pointerdown', onBubbleToolbarPointerDown, true)
   document.addEventListener('pointerup', onBubbleToolbarPointerUp, true)
+  // Document capture: Arrow nav when focus is not in a contenteditable.
+  document.addEventListener('keydown', onDocumentBlockArrowNav, true)
+  document.addEventListener('pointerdown', onEditorPointerArm, true)
 })
 
 onDestroy(() => {
@@ -1663,6 +1674,8 @@ onDestroy(() => {
   document.removeEventListener('pointercancel', onDocPointerUp)
   document.removeEventListener('pointerdown', onBubbleToolbarPointerDown, true)
   document.removeEventListener('pointerup', onBubbleToolbarPointerUp, true)
+  document.removeEventListener('keydown', onDocumentBlockArrowNav, true)
+  document.removeEventListener('pointerdown', onEditorPointerArm, true)
   unbindVimDocumentListeners()
   stopMarqueeAutoScroll()
   closeExternalLinkModal()
@@ -3230,15 +3243,242 @@ function handleTab(block: Block, shift: boolean) {
   pushHistory(true)
 }
 
+function isBlockSelectNavMode(): boolean {
+  return selectedBlockIds.length > 0 || !!selectedBlockId
+}
+
+/**
+ * With a block selected: ArrowRight opens a toggle, ArrowLeft closes it
+ * (swapped in RTL so "into" the body opens). Keeps block selection highlight.
+ */
+function handleSelectedToggleOpenClose(e: KeyboardEvent): boolean {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false
+  if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return false
+  if (!isBlockSelectNavMode()) return false
+  if (editorProps.readonly) return false
+
+  // Don't steal when already editing inside a contenteditable.
+  if (
+    e.target instanceof Element
+    && e.target.closest('[contenteditable="true"], input, textarea')
+  ) {
+    return false
+  }
+
+  const selected = selectedBlocksInOrder()
+  const toggles = selected.filter((b) => b.type === 'toggle')
+  if (toggles.length === 0) return false
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  let changed = false
+  for (const block of toggles) {
+    const live = byId(block.id) ?? block
+    const rtl = directionFor(live.id) === 'rtl'
+    // Open = expand toward the body (Right in LTR, Left in RTL).
+    const wantOpen = rtl ? e.key === 'ArrowLeft' : e.key === 'ArrowRight'
+    const nextCollapsed = !wantOpen
+    const currentlyCollapsed = live.props.collapsed === true
+    if (currentlyCollapsed === nextCollapsed) continue
+
+    const idx = blocks.indexOf(live)
+    // Set props without patchProps' "open → focus first child" side effect,
+    // so block selection (blue highlight) stays on the toggle.
+    const nextProps = { ...live.props, collapsed: nextCollapsed }
+    const nextBlock: Block = { ...live, props: nextProps }
+    if (idx !== -1) blocks[idx] = nextBlock
+    syncTogglePlaceholder(nextBlock, { history: false })
+    changed = true
+  }
+
+  if (changed) pushHistory(true)
+
+  // Re-assert selection after structural visibility change.
+  const keepId = selectedBlockId || toggles[0]!.id
+  if (byId(keepId)) selectBlock(keepId)
+  return true
+}
+
+/** Printable character that should start editing a block-selected line. */
+function isPrintableTypingKey(e: KeyboardEvent): boolean {
+  if (e.ctrlKey || e.metaKey || e.altKey) return false
+  if (e.key === 'Dead' || e.key === 'Process') return false
+  // Space and single Unicode chars (letters, digits, punctuation, emoji).
+  return e.key.length === 1
+}
+
+/**
+ * When a block is selected (blue highlight) and the user types, enter that block
+ * and insert the character (Notion-style: replace text content of the target block).
+ */
+function typeIntoSelectedBlock(e: KeyboardEvent): boolean {
+  if (!isPrintableTypingKey(e)) return false
+  if (editorProps.readonly) return false
+  if (hasActiveManagedSelection()) return false
+
+  // Already typing inside a contenteditable — leave native handling alone.
+  if (
+    e.target instanceof Element
+    && e.target.closest('[contenteditable="true"], input, textarea')
+  ) {
+    return false
+  }
+
+  const selected = selectedBlocksInOrder()
+  if (selected.length === 0) return false
+
+  e.preventDefault()
+  e.stopPropagation()
+  const ch = e.key
+
+  // Multi-select: keep first text/code block (or first block), drop the rest.
+  let target = selected[0]!
+  if (selected.length > 1) {
+    target =
+      selected.find((b) => isTextBlock(b.type) || b.type === 'code')
+      ?? selected[0]!
+    for (const b of [...selected].reverse()) {
+      if (b.id === target.id) continue
+      const i = blocks.indexOf(b)
+      if (i !== -1) {
+        const parentToggleIdx = findContainingToggleIndex(blocks, i)
+        blocks.splice(i, 1)
+        if (parentToggleIdx !== null) {
+          const parent = blocks[parentToggleIdx]
+          if (parent?.type === 'toggle') {
+            syncTogglePlaceholder(parent, { history: false })
+          }
+        }
+      }
+    }
+    ensureNotEmpty()
+    target = byId(target.id) ?? blocks[0] ?? target
+  }
+
+  return applyTypingToBlock(target, ch)
+}
+
+/** Apply a typed character to a block: replace text/code content and focus caret. */
+function applyTypingToBlock(block: Block, ch: string): boolean {
+  const live = byId(block.id) ?? block
+  clearBlockSelection()
+  clearTextRangeSelection()
+
+  if (isTextBlock(live.type)) {
+    live.content = normalizeSpans([{ text: ch }])
+    pushHistory(true)
+    contentRevision++
+    const caret = ch.length
+    void tick().then(() => {
+      focusBlock(live.id, caret)
+      itemRefs.get(live.id)?.setSelection?.(caret, caret)
+      syncBlockDom(live.id, { start: caret, end: caret })
+    })
+    return true
+  }
+
+  if (live.type === 'code') {
+    live.props = { ...live.props, code: ch }
+    pushHistory(true)
+    void tick().then(() => focusBlock(live.id, 'end'))
+    return true
+  }
+
+  // Non-text (image, table, …): insert a new paragraph after and type there.
+  const idx = blocks.indexOf(live)
+  const insertAt = idx === -1 ? blocks.length : idx + 1
+  const nb = makeBlock('paragraph', { content: [{ text: ch }] })
+  blocks.splice(insertAt, 0, nb)
+  pushHistory(true)
+  contentRevision++
+  void tick().then(() => {
+    focusBlock(nb.id, ch.length)
+    itemRefs.get(nb.id)?.setSelection?.(ch.length, ch.length)
+  })
+  return true
+}
+
+/**
+ * Typing while a multi-block text range is selected (e.g. after drag-select):
+ * delete the range, then insert the character at the caret.
+ */
+function typeIntoManagedTextRange(e: KeyboardEvent): boolean {
+  if (!isPrintableTypingKey(e)) return false
+  if (!hasActiveManagedSelection() || !textRangeSelection) return false
+  if (editorProps.readonly) return false
+  if (
+    e.target instanceof Element
+    && e.target.closest('[contenteditable="true"], input, textarea')
+  ) {
+    // If focus is already in a CE, native replace may work — still handle for root focus.
+    if (e.target.closest('.block-editor') && document.activeElement !== rootEl) {
+      return false
+    }
+  }
+
+  e.preventDefault()
+  e.stopPropagation()
+  const ch = e.key
+  const result = deleteTextRange(blocks, textRangeSelection, visibleBlocks)
+  clearTextRangeSelection()
+  clearBlockSelection()
+  ensureNotEmpty()
+
+  if (result) {
+    const block = byId(result.focusBlockId)
+    if (block && isTextBlock(block.type)) {
+      block.content = normalizeSpans(
+        insertTextInSpans(block.content, result.focusOffset, ch),
+      )
+      pushHistory(true)
+      contentRevision++
+      const caret = result.focusOffset + ch.length
+      void tick().then(() => {
+        focusBlock(block.id, caret)
+        itemRefs.get(block.id)?.setSelection?.(caret, caret)
+        syncBlockDom(block.id, { start: caret, end: caret })
+      })
+      return true
+    }
+  }
+
+  // Fallback: type into first remaining text block
+  const first = visibleBlocks.find((b) => isTextBlock(b.type)) ?? blocks[0]
+  if (first) return applyTypingToBlock(first, ch)
+  pushHistory(true)
+  return true
+}
+
 function handleArrow(block: Block, dir: 1 | -1) {
   const neighbor = neighborBlock(block.id, dir)
+  const blockSelectMode = isBlockSelectNavMode()
 
   if (!neighbor) {
-    // ↓ from the last block with nowhere to go — create an empty paragraph
-    // so the caret can leave code / trailing inline-code / the final line.
+    // ↓ from the last block with nowhere to go — create an empty paragraph.
     if (dir === 1) {
-      addBelow(block)
+      if (blockSelectMode) {
+        // Stay in block-selection mode (highlight), do not drop into a caret-only focus.
+        if (editorProps.readonly) return
+        const idx = blocks.indexOf(block)
+        if (idx === -1) return
+        if (block.type === 'toggle') expandToggleAnchor(block)
+        const indent = insertIndentForAnchor(block)
+        const nb = makeBlock('paragraph', { props: blockPropsWithIndent(indent) })
+        blocks.splice(idx + 1, 0, nb)
+        pushHistory(true)
+        selectBlock(nb.id)
+      } else {
+        addBelow(block)
+      }
     }
+    return
+  }
+
+  // Block-selection mode (blue background): keep selecting whole blocks so
+  // ArrowDown/Up walks the page with visible selection chrome.
+  if (blockSelectMode) {
+    selectBlock(neighbor.id)
     return
   }
 
@@ -3249,6 +3489,183 @@ function handleArrow(block: Block, dir: 1 | -1) {
   } else {
     selectBlock(neighbor.id)
   }
+}
+
+/**
+ * Nothing block-selected: enter block-selection mode with highlight.
+ *
+ * - Focus on editor root / chrome: ↓ first block, ↑ last block.
+ * - Caret in contenteditable (collapsed) at first/last line: leave edit mode
+ *   and block-select the neighbor (or current at edge). Avoids needing Escape
+ *   first to blur, then ↓.
+ *
+ * Returns true if the key was handled.
+ */
+function handleArrowWhenNoSelection(e: KeyboardEvent): boolean {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return false
+  if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return false
+  if (visibleBlocks.length === 0) return false
+  if (isBlockSelectNavMode() || hasActiveManagedSelection()) return false
+
+  const dir: 1 | -1 = e.key === 'ArrowDown' ? 1 : -1
+  const ids = visibleBlocks.map((b) => b.id)
+  const t = e.target
+
+  // Caret inside a text/code field: only take over at the line boundary so
+  // multi-line editing still uses native Up/Down between lines.
+  if (
+    t instanceof Element
+    && t.closest('[contenteditable="true"], textarea')
+    && rootEl?.contains(t)
+  ) {
+    const active =
+      document.activeElement instanceof HTMLElement
+      && rootEl.contains(document.activeElement)
+        ? document.activeElement
+        : t instanceof HTMLElement
+          ? t
+          : null
+    if (!active) return false
+
+    const sel = window.getSelection()
+    if (sel && !sel.isCollapsed) return false
+
+    if (dir === 1 && !isCaretOnLastLine(active)) return false
+    if (dir === -1 && !isCaretOnFirstLine(active)) return false
+
+    const currentId =
+      blockIdFromEventTarget(active)
+      ?? blockIdFromEventTarget(t)
+      ?? focusedBlockId
+    if (!currentId || !ids.includes(currentId)) return false
+
+    e.preventDefault()
+    // Prefer moving to the next/previous block; at the edge, select current.
+    const targetId = resolveArrowNavTarget(ids, currentId, dir) ?? currentId
+    selectBlock(targetId)
+    return true
+  }
+
+  e.preventDefault()
+  // No caret / focus on root: enter at page edge (first on ↓, last on ↑).
+  const targetId = resolveArrowNavTarget(ids, null, dir)
+  if (!targetId) return true
+  selectBlock(targetId)
+  return true
+}
+
+/**
+ * Document-level keys when the editor surface is active but focus is not
+ * inside a contenteditable (e.g. block selected → root focused).
+ * Handles ArrowUp/Down navigation and typing into a selected block.
+ */
+function onDocumentBlockArrowNav(e: KeyboardEvent) {
+  if (editorProps.readonly) return
+  if (e.defaultPrevented) return
+
+  const target = e.target
+  if (target instanceof Element) {
+    // Never steal from app dialogs / global chrome outside the editor.
+    if (
+      target.closest(
+        '[role="dialog"], .command-palette, .settings-popup, .shortcuts-help, .page-title, .page-sidebar',
+      )
+      && !rootEl?.contains(target)
+    ) {
+      return
+    }
+  }
+
+  const active = document.activeElement
+  const focusInEditor = !!(
+    rootEl
+    && active
+    && (active === rootEl || rootEl.contains(active))
+  )
+  const targetInEditor = !!(
+    rootEl
+    && target instanceof Node
+    && (target === rootEl || rootEl.contains(target))
+  )
+  // Also allow when focus is on body after clicking the editor (surface armed).
+  if (!focusInEditor && !targetInEditor && !editorSurfaceArmed) return
+  if (
+    !focusInEditor
+    && !targetInEditor
+    && active
+    && active !== document.body
+    && active !== document.documentElement
+    && !(rootEl && rootEl.contains(active))
+  ) {
+    return
+  }
+
+  const inContentEditable =
+    target instanceof Element
+    && !!target.closest('[contenteditable="true"], input, textarea, select')
+    && !!rootEl?.contains(target)
+
+  // Arrow at line boundary inside contenteditable: exit edit → block selection
+  // (so users need not press Escape first).
+  if (
+    inContentEditable
+    && !isBlockSelectNavMode()
+    && !hasActiveManagedSelection()
+    && (e.key === 'ArrowDown' || e.key === 'ArrowUp')
+  ) {
+    if (handleArrowWhenNoSelection(e)) {
+      e.stopPropagation()
+      return
+    }
+    // Mid-block multi-line: leave to native caret movement.
+    return
+  }
+
+  // Real form fields / contenteditable (when not handled above): don't steal typing.
+  if (
+    inContentEditable
+    && !isBlockSelectNavMode()
+    && !hasActiveManagedSelection()
+  ) {
+    return
+  }
+
+  // Typing into selected block / managed range (focus usually on editor root).
+  if (hasActiveManagedSelection() && typeIntoManagedTextRange(e)) return
+  if (isBlockSelectNavMode() && typeIntoSelectedBlock(e)) return
+
+  // Selected toggle: ← close / → open (RTL-aware).
+  if (handleSelectedToggleOpenClose(e)) return
+
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+  if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
+
+  if (hasActiveManagedSelection()) return
+
+  if (isBlockSelectNavMode()) {
+    const current =
+      selectedBlockId
+      || selectedBlocksInOrder()[0]?.id
+      || null
+    if (!current) return
+    const block = byId(current)
+    if (!block) return
+    e.preventDefault()
+    e.stopPropagation()
+    handleArrow(block, e.key === 'ArrowDown' ? 1 : -1)
+    return
+  }
+
+  if (handleArrowWhenNoSelection(e)) {
+    e.stopPropagation()
+  }
+}
+
+/** True after the user interacted with this editor; enables arrow nav when focus is on body. */
+let editorSurfaceArmed = false
+
+function armEditorSurface() {
+  editorSurfaceArmed = true
 }
 
 function resolveFormatRange(
@@ -5681,6 +6098,29 @@ function onKeydownCapture(e: KeyboardEvent) {
       deleteManagedTextRange()
       return
     }
+    if (typeIntoManagedTextRange(e)) return
+  }
+
+  // Block selected (blue highlight): typing enters the block and inserts text.
+  // Must run before isNativeInputTarget early-out is irrelevant (focus is on root).
+  if (isBlockSelectNavMode() && typeIntoSelectedBlock(e)) {
+    return
+  }
+
+  // Selected toggle: ← / → collapse / expand.
+  if (handleSelectedToggleOpenClose(e)) {
+    return
+  }
+
+  // Arrow at line boundary inside contenteditable → block selection (no Escape needed).
+  if (
+    !isBlockSelectNavMode()
+    && !hasActiveManagedSelection()
+    && (e.key === 'ArrowDown' || e.key === 'ArrowUp')
+    && handleArrowWhenNoSelection(e)
+  ) {
+    e.stopPropagation()
+    return
   }
 
   if (isNativeInputTarget(e.target)) {
@@ -5707,6 +6147,18 @@ function onKeydownCapture(e: KeyboardEvent) {
 
       return
     }
+  }
+
+  // No block selection: ArrowDown → first block, ArrowUp → last (then next/prev).
+  // Capture so it works when focus is on the editor root (tabindex=-1).
+  if (
+    !selectedBlockId
+    && selectedBlockIds.length === 0
+    && !hasActiveManagedSelection()
+    && handleArrowWhenNoSelection(e)
+  ) {
+    // Mark handled so bubble-phase onRootKeydown does not run it again.
+    e.stopPropagation()
   }
 }
 
@@ -6011,7 +6463,9 @@ function onRootKeydown(e: KeyboardEvent) {
     ) {
       e.preventDefault()
       deleteManagedTextRange()
+      return
     }
+    if (!e.defaultPrevented && typeIntoManagedTextRange(e)) return
     return
   }
 
@@ -6032,6 +6486,8 @@ function onRootKeydown(e: KeyboardEvent) {
       handleArrow(edge, e.key === 'ArrowDown' ? 1 : -1)
       return
     }
+    if (!e.defaultPrevented && handleSelectedToggleOpenClose(e)) return
+    if (!e.defaultPrevented && typeIntoSelectedBlock(e)) return
     return
   }
 
@@ -6066,16 +6522,17 @@ function onRootKeydown(e: KeyboardEvent) {
   }
 
   if (!id) {
-return
-}
+    if (!e.defaultPrevented) handleArrowWhenNoSelection(e)
+    return
+  }
 
   const block = byId(id)
 
   if (!block) {
- clearBlockSelection();
-
- return 
-}
+    clearBlockSelection()
+    if (!e.defaultPrevented) handleArrowWhenNoSelection(e)
+    return
+  }
 
   if (e.key === 'Backspace' || e.key === 'Delete') {
     e.preventDefault()
@@ -6103,6 +6560,16 @@ return
     }
     handleArrow(block, e.key === 'ArrowDown' ? 1 : -1)
 
+    return
+  }
+
+  // Selected toggle: ← close / → open.
+  if (!e.defaultPrevented && handleSelectedToggleOpenClose(e)) {
+    return
+  }
+
+  // Single block selected: typing replaces content and focuses the caret inside.
+  if (!e.defaultPrevented && typeIntoSelectedBlock(e)) {
     return
   }
 
@@ -6497,6 +6964,7 @@ export function focusEnd() {
   <EditorBlockTree
     entries={renderEntries}
     lockedBlocks={editorProps.lockedBlocks ?? null}
+    selectionKey={[...selectedBlockIds].sort().join('\0') + '|' + (selectedBlockId ?? '')}
   />
 
   {#if !readonly}

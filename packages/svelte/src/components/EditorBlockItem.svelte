@@ -662,9 +662,14 @@
 
 .ebi-selected {
   /* Flat fill only — no border or rounded corners on block selection. */
-  background: rgb(35 131 226 / 0.14) !important;
+  background: rgb(35 131 226 / 0.22) !important;
   border-radius: 0;
   box-shadow: none;
+  outline: none;
+}
+
+:global(html[data-theme='dark']) .ebi-selected {
+  background: rgb(90 160 255 / 0.22) !important;
 }
 
 .ebi-list-marker {

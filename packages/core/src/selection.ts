@@ -431,6 +431,33 @@ export function rangeMarkValueAcrossSegments(
   return unified ?? null
 }
 
+/**
+ * Resolve which block ArrowUp/ArrowDown should land on.
+ * - No current id: Down → first, Up → last
+ * - With current id: step one block in `dir`, or null at the edge
+ */
+export function resolveArrowNavTarget(
+  visibleBlockIds: string[],
+  currentId: string | null | undefined,
+  dir: 1 | -1,
+): string | null {
+  if (!visibleBlockIds.length) return null
+  if (!currentId) {
+    return dir === 1
+      ? visibleBlockIds[0]!
+      : visibleBlockIds[visibleBlockIds.length - 1]!
+  }
+  const idx = visibleBlockIds.indexOf(currentId)
+  if (idx === -1) {
+    return dir === 1
+      ? visibleBlockIds[0]!
+      : visibleBlockIds[visibleBlockIds.length - 1]!
+  }
+  const next = idx + dir
+  if (next < 0 || next >= visibleBlockIds.length) return null
+  return visibleBlockIds[next]!
+}
+
 /** Build a text range selecting full content of visible text blocks from first to last. */
 export function fullBlockTextRange(visibleBlocks: Block[]): TextRangeSelection | null {
   const textBlocks = visibleBlocks.filter(b => isTextBlock(b.type))

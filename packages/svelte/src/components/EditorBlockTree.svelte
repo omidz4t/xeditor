@@ -12,10 +12,16 @@
     vboxBaseIndent,
     /** Must be a prop so soft-locks re-render when peers change (context alone does not). */
     lockedBlocks = null as Record<string, { name: string; color: string }> | null,
+    /**
+     * Bumped when block multi-select changes so `selected` props recompute.
+     * Context callbacks alone do not re-render this tree in Svelte 5.
+     */
+    selectionKey = '',
   }: {
     entries: BlockRenderEntry[]
     vboxBaseIndent?: number
     lockedBlocks?: Record<string, { name: string; color: string }> | null
+    selectionKey?: string
   } = $props()
 
   const ctx = getContext<BlockEditorContext>(BLOCK_EDITOR_CTX)!
@@ -125,7 +131,10 @@
   onDestroy(stopResizeListeners)
 
   function bindItem(block: Block) {
-    // Read lockedBlocks from props so Svelte invalidates this when peer soft-locks change.
+    // Read lockedBlocks / selectionKey from props so Svelte invalidates when they change
+    // (context alone does not re-render this tree).
+    void selectionKey
+    void lockedBlocks
     const lockedBy =
       (lockedBlocks && lockedBlocks[block.id])
       || ctx.lockFor(block.id)
@@ -187,7 +196,7 @@
       <div class="ebi-column-list__row">
         {#each entry.columns as column, colIndex (column.block.id)}
           <div class="ebi-column-list__col" style={columnStyle(entry.columns, colIndex)}>
-            <EditorBlockTree entries={column.children} {lockedBlocks} />
+            <EditorBlockTree entries={column.children} {lockedBlocks} {selectionKey} />
           </div>
           {#if colIndex < entry.columns.length - 1}
             <div
@@ -220,6 +229,7 @@
               entries={entry.children}
               vboxBaseIndent={entry.block.props.indent ?? 0}
               {lockedBlocks}
+              {selectionKey}
             />
           {:else}
             <button type="button" class="ebi-toggle-empty" onclick={() => ctx.addBelow(entry.block)}>Empty toggle. Click or drop blocks inside.</button>

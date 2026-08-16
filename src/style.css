@@ -209,7 +209,7 @@ html {
   /* Keep layout stable when the soft keyboard opens on mobile. */
   height: 100%;
   overflow: hidden;
-  /* No reserved gutter — only one scroll surface (#app) and only when needed. */
+  /* Scroll lives on #app only — reserve gutter there, not on html/body. */
   scrollbar-gutter: auto;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -231,6 +231,8 @@ body {
 /*
  * Single page scroll root. html/body stay overflow:hidden so we never stack
  * document + app scrollbars side by side.
+ * Always reserve the vertical scrollbar lane so content width does not jump
+ * when the page becomes tall enough to scroll.
  */
 #app {
   height: 100%;
@@ -239,8 +241,8 @@ body {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: auto;
-  /* Firefox: thin overlay-like bar, transparent track */
+  scrollbar-gutter: stable;
+  /* Firefox: thin bar; gutter still reserved when content is short */
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--page-text, #37352f) 32%, transparent) transparent;
 }
