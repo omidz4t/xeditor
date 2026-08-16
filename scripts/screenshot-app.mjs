@@ -60,6 +60,7 @@ import { spawn } from 'node:child_process'
 import {
   mkdirSync,
   writeFileSync,
+  readFileSync,
   existsSync,
   readdirSync,
   unlinkSync,
@@ -70,9 +71,6 @@ import { fileURLToPath } from 'node:url'
 import { setTimeout as sleep } from 'node:timers/promises'
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..')
-const OUT_DIR = process.env.OUT_DIR
-  ? join(root, process.env.OUT_DIR)
-  : join(root, 'docs/screenshots')
 const HEADLESS = process.env.HEADLESS !== 'false'
 
 // ── CLI flags ────────────────────────────────────────────────────────────────
@@ -83,6 +81,40 @@ function flag(name) {
   if (i === -1) return null
   return args[i + 1] ?? true
 }
+
+const LOCALE = String(flag('--locale') || process.env.SCREENSHOT_LOCALE || 'en')
+  .trim()
+  .toLowerCase()
+
+const OUT_DIR = process.env.OUT_DIR
+  ? join(root, process.env.OUT_DIR)
+  : join(root, LOCALE === 'fa' ? 'docs/screenshots/fa' : 'docs/screenshots')
+
+function parseDemoCopy(md) {
+  const src = String(md || '')
+  const galleryMatch = src.match(/^## gallery\s*\n([\s\S]*)$/m)
+  const gallery = galleryMatch ? galleryMatch[1].trim() : ''
+  const head = galleryMatch ? src.slice(0, galleryMatch.index) : src
+  const fields = { gallery }
+  for (const part of head.split(/^## /m).slice(1)) {
+    const nl = part.indexOf('\n')
+    const key = (nl === -1 ? part : part.slice(0, nl)).trim()
+    const val = (nl === -1 ? '' : part.slice(nl + 1)).trim()
+    if (key) fields[key] = val
+  }
+  return fields
+}
+
+const DEMO_COPY = parseDemoCopy(
+  readFileSync(
+    join(
+      root,
+      'site/copy',
+      LOCALE === 'fa' ? 'screenshot-demo.fa.md' : 'screenshot-demo.md',
+    ),
+    'utf8',
+  ),
+)
 
 // Quality-first defaults (clearer shots; still JPEG unless --png).
 const TARGET_KB = Number(process.env.TARGET_KB || flag('--target-kb') || 90)
@@ -125,14 +157,14 @@ const STAGES = [
   {
     id: 'landing-hero',
     title: 'Marketing hero + site header',
-    path: '/',
+    path: LOCALE === 'fa' ? '/fa/' : '/',
     waitFor: '.hero h1, .brand, .site-header',
     // Full viewport so brand header stays in frame
   },
   {
     id: 'landing-download',
     title: 'Download cards',
-    path: '/#download',
+    path: LOCALE === 'fa' ? '/fa/#download' : '/#download',
     waitFor: '#download',
     prepare: async (page) => {
       await page.evaluate(() => {
@@ -439,12 +471,12 @@ async function openCommentsPanel(page) {
 async function seedDemoComments(page) {
   await openCommentsPanel(page)
 
-  const hasExamples = await page.evaluate(() => {
+  const hasExamples = await page.evaluate((needle) => {
     const text = document.querySelector('.comment-panel')?.innerText || ''
     // Require at least two threads so we don't skip after a partial seed
     const threads = document.querySelectorAll('.comment-thread').length
-    return threads >= 2 && /Looks great|Can we add/i.test(text)
-  })
+    return threads >= 2 && (text.includes(needle) || /Looks great|Can we add/i.test(text))
+  }, DEMO_COPY.commentNeedle || 'Looks great')
   if (hasExamples) return
 
   const composerSel =
@@ -492,15 +524,15 @@ async function seedDemoComments(page) {
   }
 
   try {
-    await postPageComment('Looks great — this gallery will help new users.')
-    await postPageComment('Can we add a short note about Delta Chat sync next?')
+    await postPageComment(DEMO_COPY.comment1 || 'Looks great — this gallery will help new users.')
+    await postPageComment(DEMO_COPY.comment2 || 'Can we add a short note about Delta Chat sync next?')
 
     // Reply on the newest thread (first in the list)
     const replySel = '.comment-thread__reply-input, input[aria-label="Reply to thread"]'
     const replyInput = await page.$(replySel)
     if (replyInput) {
       await replyInput.click()
-      await setInputValue(replySel, 'Agreed — I will draft that for the next pass.')
+      await setInputValue(replySel, DEMO_COPY.commentReply || 'Agreed — I will draft that for the next pass.')
       const sent = await page.evaluate(() => {
         const btn = document.querySelector('.comment-thread__reply-send')
         if (btn && !btn.disabled) {
@@ -677,63 +709,26 @@ function computeScrollOffsets(metrics, { overlap = 0.18, maxShots = 8 } = {}) {
 }
 
 /** Small placeholder image so the gallery image block is not huge. */
-const DEMO_IMAGE_DATA_URL =
-  'data:image/svg+xml,'
-  + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">'
-    + '<rect width="280" height="120" rx="12" fill="#e8f0fe"/>'
-    + '<rect x="24" y="28" width="64" height="64" rx="10" fill="#aecbfa"/>'
-    + '<text x="108" y="58" font-family="system-ui,sans-serif" font-size="16" fill="#174ea6">Image block</text>'
-    + '<text x="108" y="82" font-family="system-ui,sans-serif" font-size="13" fill="#5f6368">caption example</text>'
-    + '</svg>',
+function demoImageDataUrl() {
+  const alt = DEMO_COPY.imageAlt || 'Image block'
+  const caption = DEMO_COPY.imageCaption || 'caption example'
+  return (
+    'data:image/svg+xml,'
+    + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">'
+      + '<rect width="280" height="120" rx="12" fill="#e8f0fe"/>'
+      + '<rect x="24" y="28" width="64" height="64" rx="10" fill="#aecbfa"/>'
+      + `<text x="108" y="58" font-family="Arad,Shabnam,sans-serif" font-size="16" fill="#174ea6">${alt}</text>`
+      + `<text x="108" y="82" font-family="Arad,Shabnam,sans-serif" font-size="13" fill="#5f6368">${caption}</text>`
+      + '</svg>',
+    )
   )
+}
 
 /** Demo markdown covering every type the paste pipeline understands. */
 function buildBlockGalleryMarkdown() {
-  return [
-    '✨ Welcome to XEditor — **block gallery**',
-    '',
-    'A collaborative block editor for Delta Chat. Below is one example of each block type.',
-    '',
-    '# Heading 1',
-    '## Heading 2',
-    '### Heading 3',
-    '#### Heading 4',
-    '##### Heading 5',
-    '###### Heading 6',
-    '',
-    'Paragraph with **bold**, *italic*, ~~strike~~, `inline code`, and a [link](https://delta.chat).',
-    '',
-    '- Bulleted list item one',
-    '- Bulleted list item two',
-    '',
-    '1. Numbered list item one',
-    '2. Numbered list item two',
-    '',
-    '- [x] Done: ship .xdc packages',
-    '- [ ] Todo: invite collaborators',
-    '',
-    '> Quote — capture something worth remembering.',
-    '',
-    '```javascript',
-    'function hello(name) {',
-    '  return `Hello, ${name}!`',
-    '}',
-    '```',
-    '',
-    '---',
-    '',
-    '| Feature | Status | Notes |',
-    '| --- | --- | --- |',
-    '| Realtime sync | ✅ | Delta Chat webxdc |',
-    '| Local mode | ✅ | IndexedDB |',
-    '| Comments | ✅ | Per page |',
-    '',
-    `![Image block](${DEMO_IMAGE_DATA_URL})`,
-    '',
-    'End of markdown-backed blocks — slash blocks follow.',
-    '',
-  ].join('\n')
+  const gallery = DEMO_COPY.gallery || ''
+  return gallery.replaceAll('IMAGE_PLACEHOLDER', demoImageDataUrl())
 }
 
 async function focusEditor(page) {
@@ -803,10 +798,10 @@ async function pasteIntoEditor(page, text) {
   }
 
   // Verify markdown structure landed
-  const ok = await page.evaluate(() => {
+  const ok = await page.evaluate((heading, bullet) => {
     const t = document.querySelector('.block-editor')?.innerText || ''
-    return /Heading 1/i.test(t) && /bullet/i.test(t)
-  })
+    return t.includes(heading) && t.includes(bullet)
+  }, DEMO_COPY.headingNeedle || 'Heading 1', DEMO_COPY.bulletNeedle || 'bullet')
   if (!ok) {
     console.warn('  warn: markdown paste did not produce gallery blocks')
   }
@@ -832,15 +827,19 @@ async function insertSlashBlock(page, query, bodyText = '') {
 }
 
 async function seedDemoContent(page) {
-  const already = await page.evaluate(() => {
+  const already = await page.evaluate((needles) => {
     const t = document.querySelector('.block-editor')?.innerText || ''
-    // Require the markdown gallery markers, not only the title line
     return (
-      /block gallery/i.test(t)
-      && /Heading 1/i.test(t)
-      && /Bulleted list item/i.test(t)
-      && /Feature/i.test(t)
+      t.includes(needles.already)
+      && t.includes(needles.heading)
+      && t.includes(needles.bullet)
+      && t.includes(needles.table)
     )
+  }, {
+    already: DEMO_COPY.alreadySeededNeedle || 'block gallery',
+    heading: DEMO_COPY.headingNeedle || 'Heading 1',
+    bullet: DEMO_COPY.bulletNeedle || 'Bulleted list item',
+    table: DEMO_COPY.tableNeedle || 'Feature',
   })
   if (already) {
     await ensurePageEmojiAndTitle(page)
@@ -860,7 +859,7 @@ async function seedDemoContent(page) {
   // Types markdown cannot express — append via slash menu after the trailing marker line
   try {
     // Focus the last contenteditable paragraph (not a table cell)
-    await page.evaluate(() => {
+    await page.evaluate((markerNeedle) => {
       const editables = [
         ...document.querySelectorAll(
           '.block-editor [contenteditable="true"]:not(td [contenteditable]):not(th [contenteditable])',
@@ -868,7 +867,8 @@ async function seedDemoContent(page) {
       ]
       // Prefer the marker line we pasted
       const marker = editables.find((el) =>
-        /slash blocks follow|End of markdown/i.test(el.textContent || ''),
+        (el.textContent || '').includes(markerNeedle)
+          || /slash blocks follow|End of markdown/i.test(el.textContent || ''),
       )
       const last = marker || editables[editables.length - 1]
       if (!last) return
@@ -882,18 +882,18 @@ async function seedDemoContent(page) {
         sel.addRange(range)
       }
       last.scrollIntoView({ block: 'center' })
-    })
+    }, DEMO_COPY.galleryMarker || 'slash blocks follow')
     await sleep(150)
     await page.keyboard.press('Enter')
-    await insertSlashBlock(page, 'toggle', 'Toggle — click to expand nested notes')
+    await insertSlashBlock(page, 'toggle', DEMO_COPY.toggleBody || 'Toggle — click to expand nested notes')
     await page.keyboard.press('Enter')
     await page.keyboard.press('Tab')
-    await page.keyboard.type('Hidden detail inside the toggle', { delay: 10 })
+    await page.keyboard.type(DEMO_COPY.toggleDetail || 'Hidden detail inside the toggle', { delay: 10 })
     await page.keyboard.press('Enter')
     await page.keyboard.down('Shift')
     await page.keyboard.press('Tab')
     await page.keyboard.up('Shift')
-    await insertSlashBlock(page, 'callout', 'Callout — highlighted tip for readers')
+    await insertSlashBlock(page, 'callout', DEMO_COPY.calloutBody || 'Callout — highlighted tip for readers')
     await page.keyboard.press('Enter')
     await insertSlashBlock(page, 'poll')
     await sleep(250)
@@ -902,7 +902,11 @@ async function seedDemoContent(page) {
     )
     if (pollInputs.length) {
       for (let i = 0; i < Math.min(pollInputs.length, 3); i++) {
-        const labels = ['Preferred sync mode?', 'Realtime sync', 'Local only']
+        const labels = [
+          DEMO_COPY.pollQuestion || 'Preferred sync mode?',
+          DEMO_COPY.pollOption1 || 'Realtime sync',
+          DEMO_COPY.pollOption2 || 'Local only',
+        ]
         await pollInputs[i].click({ clickCount: 3 })
         await page.keyboard.type(labels[i] || `Option ${i}`, { delay: 6 })
       }
@@ -925,7 +929,7 @@ async function seedExtraSidebarPages(page) {
   )
   if (count >= 3) return
 
-  for (const title of ['Meeting notes', 'Ideas']) {
+  for (const title of [DEMO_COPY.sidebarPage1 || 'Meeting notes', DEMO_COPY.sidebarPage2 || 'Ideas']) {
     const before = await page.evaluate(
       () => document.querySelectorAll('.page-sidebar__item').length,
     )
@@ -978,7 +982,7 @@ async function ensurePageEmojiAndTitle(page) {
     const titleEl = await page.$(titleSel)
     if (titleEl) {
       await titleEl.click({ clickCount: 3 })
-      await page.keyboard.type('Product notes', { delay: 15 })
+      await page.keyboard.type(DEMO_COPY.pageTitle || 'Product notes', { delay: 15 })
       // Blur title without Escape — Escape dismisses the left sidebar UI layer.
       await page.evaluate(() => {
         document.activeElement?.blur?.()
@@ -1058,8 +1062,11 @@ async function sidebarIsVisiblyOpen(page) {
     if (!sb) return false
     // Prefer the open class; also accept expanded geometry if class lags a frame.
     const r = sb.getBoundingClientRect()
-    const wideEnough = r.width > 120 && r.left >= -8 && r.left < 40
-    return sb.classList.contains('page-sidebar--open') && wideEnough
+    const wideEnough = r.width > 120
+    const onStart =
+      (r.left >= -8 && r.left < 40)
+      || (r.right <= window.innerWidth + 8 && r.right > window.innerWidth - 40)
+    return sb.classList.contains('page-sidebar--open') && wideEnough && onStart
   })
 }
 
@@ -1659,7 +1666,7 @@ Then re-run:
   mkdirSync(OUT_DIR, { recursive: true })
 
   const { base, appPath, child } = await ensureServer()
-  console.log(`Base URL: ${base}  app: ${appPath}`)
+  console.log(`Base URL: ${base}  app: ${appPath}  locale: ${LOCALE}`)
   if (FULL_SCREEN) {
     console.log(`Full-screen mode: ${VIEW_W}×${VIEW_H} (no UI crops)`)
   }
@@ -1725,6 +1732,7 @@ Then re-run:
     fullScreen: FULL_SCREEN,
     fullPage: FULL_PAGE,
     viewport: { width: VIEW_W, height: VIEW_H, deviceScaleFactor: DEVICE_SCALE },
+    locale: LOCALE,
     targetKb: TARGET_KB,
     shots: [],
   }
@@ -1795,6 +1803,7 @@ Then re-run:
       } else {
         await sleep(400)
       }
+
       if (stage.prepare) {
         try {
           await stage.prepare(page)

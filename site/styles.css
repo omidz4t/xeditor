@@ -58,6 +58,32 @@ html {
   overflow-y: scroll;
 }
 
+html[dir='rtl'] {
+  direction: rtl;
+}
+
+html[dir='rtl'] .hero,
+html[dir='rtl'] .hero__logo,
+html[dir='rtl'] .hero__title,
+html[dir='rtl'] .hero__tag,
+html[dir='rtl'] .hero__copy,
+html[dir='rtl'] .hero__meta,
+html[dir='rtl'] .project__text,
+html[dir='rtl'] .carousel-head h2,
+html[dir='rtl'] .feature-modal,
+html[dir='rtl'] blockquote {
+  text-align: start;
+}
+
+html[dir='rtl'] .btn__size {
+  margin-left: 0;
+  margin-inline-start: 0.15rem;
+}
+
+html[dir='rtl'] {
+  font-feature-settings: 'ss01' 0;
+}
+
 body,
 body.xeditor-type {
   position: relative;
@@ -316,13 +342,12 @@ em {
   width: 100%;
   margin: 0 auto;
   padding: 0 1.5rem;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  /* Never a second scrollbar — page root owns scrolling */
-  overflow: visible;
+  overflow: hidden;
 }
 
 @media (min-width: 768px) {
@@ -408,6 +433,14 @@ em {
   font-size: 0.95rem;
   line-height: 1.65;
   color: var(--text);
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[dir='rtl'] .hero__copy {
+  gap: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
 }
 
 @media (min-width: 768px) {
@@ -527,18 +560,22 @@ em {
   padding: 0;
   overflow: hidden;
   flex: 0 0 auto;
+  flex-shrink: 0;
   transform: none;
 }
 
 .marquee {
   width: 100%;
   overflow: hidden;
+  /* Keep the strip LTR so RTL pages don't park the track off-screen. */
+  direction: ltr;
 }
 
 .marquee__track {
   display: flex;
   align-items: stretch;
   width: max-content;
+  direction: ltr;
   animation: marquee 30s linear infinite;
 }
 
@@ -801,6 +838,11 @@ em {
 .carousel-section {
   width: 100%;
   padding: 5rem 0;
+}
+
+.carousel,
+.carousel__track {
+  direction: ltr;
 }
 
 .carousel-head {

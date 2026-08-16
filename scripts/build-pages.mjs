@@ -324,7 +324,7 @@ writeFileSync(
 )
 
 // 4) Inject version + download URLs into HTML pages
-for (const name of ['index.html', 'versions.html']) {
+for (const name of ['index.html', 'versions.html', 'fa/index.html']) {
   const path = join(outDir, name)
   if (!existsSync(path)) continue
   let html = readFileSync(path, 'utf8')

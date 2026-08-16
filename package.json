@@ -20,7 +20,8 @@
     "screenshots:full": "node scripts/screenshot-app.mjs --full-screen",
     "screenshots:full-page": "node scripts/screenshot-app.mjs --full-screen --full-page",
     "screenshots:pages": "BASE_URL=https://omidz4t.github.io/xeditor APP_PATH=/app/ node scripts/screenshot-app.mjs",
-    "screenshots:local-pages": "BASE_URL=http://127.0.0.1:4173 APP_PATH=/app/ OUT_DIR=dist/screenshots node scripts/screenshot-app.mjs"
+    "screenshots:local-pages": "BASE_URL=http://127.0.0.1:4173 APP_PATH=/app/ OUT_DIR=dist/screenshots node scripts/screenshot-app.mjs",
+    "screenshots:fa": "node scripts/screenshot-app.mjs --locale fa"
   },
   "dependencies": {
     "fflate": "^0.8.2",
@@ -39,7 +40,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",
     "postcss": "^8.4.49",
-    "puppeteer": "^25.5.0",
+    "puppeteer": "^25.7.0",
     "svelte-check": "^4.1.4",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",

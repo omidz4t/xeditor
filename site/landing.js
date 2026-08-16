@@ -2,21 +2,26 @@
  * XEditor landing interactions — reveal, marquee, carousel, parallax, partner trail.
  */
 ;(() => {
+  const ASSET_BASE = document.documentElement.getAttribute('data-asset-base') || './'
+  const SHOT_DIR = (document.documentElement.getAttribute('data-screenshot-dir') || 'screenshots').replace(/\/$/, '')
+
   // Desktop shots only (1280×800 / 16:10) — portrait mobile frames break marquee sizing
   const SHOTS = [
-    './screenshots/app-editor.jpg',
-    './screenshots/app-editor-2.jpg',
-    './screenshots/app-editor-3.jpg',
-    './screenshots/app-editor-4.jpg',
-    './screenshots/app-sidebar.jpg',
-    './screenshots/app-comments.jpg',
-    './screenshots/app-import.jpg',
-    './screenshots/app-command-palette.jpg',
-    './screenshots/app-settings.jpg',
-    './screenshots/app-sync-setup.jpg',
+    `./${SHOT_DIR}/app-editor.jpg`,
+    `./${SHOT_DIR}/app-editor-2.jpg`,
+    `./${SHOT_DIR}/app-editor-3.jpg`,
+    `./${SHOT_DIR}/app-editor-4.jpg`,
+    `./${SHOT_DIR}/app-sidebar.jpg`,
+    `./${SHOT_DIR}/app-comments.jpg`,
+    `./${SHOT_DIR}/app-import.jpg`,
+    `./${SHOT_DIR}/app-command-palette.jpg`,
+    `./${SHOT_DIR}/app-settings.jpg`,
+    `./${SHOT_DIR}/app-sync-setup.jpg`,
   ]
 
-  const FEATURES = [
+  const FEATURES = Array.isArray(window.LANDING_FEATURES)
+    ? window.LANDING_FEATURES
+    : [
     {
       title: 'Block canvas',
       body: 'Headings, lists, todos, code, tables, images, polls — the full editor in chat.',
@@ -83,6 +88,21 @@
       img: './screenshots/app-import.jpg',
     },
   ]
+
+  function assetUrl(path) {
+    const raw = String(path || '')
+    if (/^https?:\/\//.test(raw) || raw.startsWith('data:')) return raw
+    const rel = raw.replace(/^\.\//, '')
+    const base = ASSET_BASE.endsWith('/') ? ASSET_BASE : `${ASSET_BASE}`
+    try {
+      return new URL(rel, new URL(base, window.location.href)).href
+    } catch {
+      return `${base}${rel}`
+    }
+  }
+
+  for (let i = 0; i < SHOTS.length; i += 1) SHOTS[i] = assetUrl(SHOTS[i])
+  for (const f of FEATURES) f.img = assetUrl(f.img)
 
   // ── Reveal on scroll ─────────────────────────────────────────────────────
   const reveals = document.querySelectorAll('.reveal')
@@ -302,7 +322,8 @@
       const img = document.createElement('img')
       img.src = src
       img.alt = ''
-      img.loading = 'lazy'
+      img.loading = 'eager'
+      img.decoding = 'async'
       img.className = 'shot-img'
       track.appendChild(img)
     }
