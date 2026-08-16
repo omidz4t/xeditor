@@ -159,7 +159,8 @@ jobs:
           test -f dist-pages/app/index.html
           test -f dist-pages/app/webxdc.js
           grep -q 'IndexedDB' dist-pages/app/webxdc.js
-          test ! -f dist/webxdc.js
+          # dist/webxdc.js is the vite-preview mock (written by package-font-variants).
+          # It must not ship inside .xdc — checked via unzip below.
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/index.html
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/versions.html
           grep -q "releases/download/v${{ steps.version.outputs.version }}/app.xdc" dist-pages/index.html
@@ -171,12 +172,16 @@ jobs:
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
-          if unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing|webxdc-mock|Browser demo mock'; then
+          leak=$(unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing|webxdc-mock|Browser demo mock' || true)
+          if [ -n "$leak" ]; then
             echo "Marketing/mock leaked into .xdc" >&2
+            echo "$leak" >&2
             exit 1
           fi
-          if unzip -l dist-xdc/app.xdc | grep -E '(^|/)webxdc\.js$'; then
+          mockjs=$(unzip -l dist-xdc/app.xdc | grep -E '(^|/)webxdc\.js$' || true)
+          if [ -n "$mockjs" ]; then
             echo "Mock webxdc.js must not be inside .xdc (host provides it)" >&2
+            echo "$mockjs" >&2
             exit 1
           fi
           grep -qE 'XEditor|Write together' dist-pages/index.html
