@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="XEditor — collaborative block editor for Delta Chat. Shared pages, comments, import/export, live presence — one .xdc, no cloud server."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>XEditor — Collaborative block editor for Delta Chat</title>
+    <link rel="alternate" hreflang="en" href="./" />
+    <link rel="alternate" hreflang="fa" href="./fa/" />
+    <link rel="icon" href="./app/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="./app/icon.png" />
+    <!-- Same Arad + Shabnam faces as the editor (files under ./app/fonts/) -->
+    <link rel="stylesheet" href="./editor-fonts.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="xeditor-type">
+    <!-- Live presence cursors (demo) — same look as in-app peer cursors -->
+    <div class="presence-layer" id="presence-layer" aria-hidden="true"></div>
+
+    <div class="page">
+      <!-- First screen: hero + screenshot marquee (≈100vh) -->
+      <section class="first-screen" id="about">
+        <div class="hero">
+          <div class="hero__logo reveal" data-delay="0.05">
+            <img class="hero__logo-icon" src="./app/icon.png" width="56" height="56" alt="X" />
+            <span class="hero__logo-text">XEditor</span>
+          </div>
+          <p class="hero__tag reveal" data-delay="0.15">Collaborative block editor for Delta Chat</p>
+          <h1 class="hero__title reveal" data-delay="0.25">
+            Write together<br />
+            <em>inside the chat.</em>
+          </h1>
+          <div class="hero__copy" id="hero-copy">
+            <p
+              class="hero__type"
+              data-text="XEditor is a full block workspace packed as a single .xdc WebXDC app. Send it in Delta Chat — everyone opens the same pages, comments, and presence. No account. No XEditor server."
+            ></p>
+            <p
+              class="hero__type"
+              data-text="Blocks, nested pages, import/export, command palette, local or realtime sync — the same UI you use in the browser demo ships in chat."
+            ></p>
+            <p
+              class="hero__type"
+              data-text="Open the demo free, or grab a release build for multi-peer sync."
+            ></p>
+          </div>
+          <p class="hero__meta reveal" data-delay="0.55">
+            v0.1.27 ·
+            <a href="https://github.com/omidz4t/xeditor/releases/tag/v0.1.27">Release</a> ·
+            <a href="./versions.html">All versions</a>
+            ·
+            <a href="./fa/" lang="fa" hreflang="fa">فارسی</a>
+          </p>
+        </div>
+
+        <div class="marquee" aria-label="Product screenshots">
+          <div class="marquee__track" id="marquee-track">
+            <!-- filled by JS (duplicated strip) -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Quote starts after the first viewport -->
+      <section class="quote-section">
+        <div class="quote-section__inner">
+          <div class="quote-mark-wrap reveal" data-delay="0.1" aria-hidden="true">
+            <svg class="quote-mark" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path
+                d="M7.17 6C5.42 6 4 7.43 4 9.2c0 1.4.9 2.6 2.17 3.05L5 18h4.2l1.3-5.2C11.5 11.2 10.1 9.4 8.3 8.7 8.7 7.3 9.9 6.4 11.3 6.1L10.7 4.5C9.2 4.9 7.9 5.3 7.17 6zm9.5 0C14.92 6 13.5 7.43 13.5 9.2c0 1.4.9 2.6 2.17 3.05L14.5 18H18.7l1.3-5.2c1-1.6-.4-3.4-2.2-4.1.4-1.4 1.6-2.3 3-2.6L20.2 4.5c-1.5.4-2.8.8-3.53 1.5z"
+              />
+            </svg>
+          </div>
+          <blockquote class="reveal" data-delay="0.2">
+            Built for chat — not another cloud doc you have to log into
+          </blockquote>
+          <p class="quote-author reveal" data-delay="0.3">XEditor · WebXDC</p>
+          <div class="logo-row reveal" data-delay="0.4">
+            <a
+              class="logo-row__link"
+              href="https://yjs.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img class="logo-row__icon" src="./logos/yjs.svg" width="28" height="28" alt="" />
+              <span>Yjs</span>
+            </a>
+            <a
+              class="logo-row__link"
+              href="https://svelte.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img class="logo-row__icon" src="./logos/svelte.svg" width="28" height="28" alt="" />
+              <span>Svelte</span>
+            </a>
+            <a
+              class="logo-row__link"
+              href="https://delta.chat/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                class="logo-row__icon"
+                src="./logos/deltachat.svg"
+                width="28"
+                height="28"
+                alt=""
+              />
+              <span>Delta Chat</span>
+            </a>
+          </div>
+        </div>
+        <!-- Full-bleed, centered screenshot (not constrained by quote column) -->
+        <div class="parallax-wrap reveal" data-delay="0.5">
+          <img
+            class="parallax-img"
+            id="parallax-img"
+            src="./screenshots/app-editor.jpg"
+            alt="XEditor block editor"
+            width="1280"
+            height="800"
+          />
+        </div>
+      </section>
+
+      <!-- 4. DOWNLOAD / “pricing” cards -->
+      <section class="pricing" id="download">
+        <div class="pricing__grid">
+          <article class="price-card price-card--dark reveal" data-delay="0.1">
+            <h3>app.xdc</h3>
+            <p>Default package for everyday use in Delta Chat — Arad fonts (all weights).</p>
+            <div class="price-card__price">
+              <strong>500 KB</strong>
+              <span>Package size · free &amp; open source</span>
+            </div>
+            <div class="price-card__actions">
+              <a class="btn btn--on-dark btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+                <img class="btn__icon" src="./webxdc-icon.png" width="20" height="20" alt="" />
+                .xdc
+                <span class="btn__size">500 KB</span>
+              </a>
+              <a class="btn btn--ghost-on-dark" href="./app/">Open webapp</a>
+            </div>
+          </article>
+          <article class="price-card price-card--light reveal" data-delay="0.2">
+            <h3>Full &amp; lite packs</h3>
+            <p>
+              Full = Arad only (all weights). Lite = Shabnam + Arad (Regular + Bold) for smaller size.
+            </p>
+            <div class="price-card__price">
+              <strong>500 KB · 436 KB</strong>
+              <span>editor-full · editor-lite</span>
+            </div>
+            <div class="price-card__actions">
+              <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-full.xdc">
+                Full (Arad)
+                <span class="btn__size">500 KB</span>
+              </a>
+              <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-lite.xdc">
+                Lite
+                <span class="btn__size">436 KB</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 5. FEATURE CAROUSEL (builders → users) -->
+      <section class="carousel-section" id="features">
+        <div class="carousel-head">
+          <h2 class="reveal" data-delay="0.1">
+            What <em>you</em> get
+          </h2>
+          <div class="carousel__nav reveal" data-delay="0.2" id="feature-carousel-nav">
+            <button type="button" class="circle-btn" id="carousel-prev" aria-label="Previous">
+              ‹
+            </button>
+            <button type="button" class="circle-btn" id="carousel-next" aria-label="Next">›</button>
+          </div>
+        </div>
+        <div class="carousel" id="feature-carousel">
+          <div class="carousel__viewport">
+            <div class="carousel__track" id="carousel-track"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. FEATURE “projects” stack -->
+      <section class="projects" id="tour">
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>Block canvas</h3>
+            <p>Headings, lists, todos, toggles, code, tables, images, polls — slash menu and Markdown paste.</p>
+          </div>
+          <img src="./screenshots/app-editor.jpg" alt="Block editor" class="project__img shot-img" />
+        </article>
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>Comments</h3>
+            <p>Page threads and replies in a side panel — discuss without leaving the doc.</p>
+          </div>
+          <img src="./screenshots/app-comments.jpg" alt="Comments panel" class="project__img shot-img" />
+        </article>
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>Import &amp; bind</h3>
+            <p>Markdown files, folders, ZIP, workspace JSON — open or bind from one modal.</p>
+          </div>
+          <img src="./screenshots/app-import.jpg" alt="Import modal" class="project__img shot-img" />
+        </article>
+      </section>
+
+      <!-- 7. PARTNER / CTA with cursor trail -->
+      <section class="partner" id="try">
+        <div class="partner__stage" id="partner-stage">
+          <h2 class="partner__title reveal" data-delay="0.1">Open it in chat</h2>
+          <div class="partner__actions reveal" data-delay="0.2" id="partner-actions">
+            <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+              <img class="btn__icon" src="./webxdc-icon.png" width="20" height="20" alt="" />
+              .xdc
+            </a>
+            <a class="btn btn--primary" href="./app/">Open webapp</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. FOOTER -->
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <a class="btn btn--primary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+            <img class="btn__icon btn__icon--on-dark" src="./webxdc-icon.png" width="20" height="20" alt="" />
+            Download .xdc
+          </a>
+          <div class="site-footer__links">
+            <span class="site-footer__arrow" aria-hidden="true">↗</span>
+            <nav>
+              <a href="#features">Features</a>
+              <a href="#tour">Tour</a>
+              <a href="#download">Download</a>
+            </nav>
+            <nav>
+              <a href="https://github.com/omidz4t/xeditor" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://webxdc.org/" target="_blank" rel="noopener">WebXDC</a>
+              <a href="https://delta.chat/" target="_blank" rel="noopener">Delta Chat</a>
+            </nav>
+          </div>
+        </div>
+      </footer>
+
+      <!-- 9. COPYRIGHT -->
+      <div class="copyright">
+        <span>XEditor · v0.1.27</span>
+        <span>WebXDC · no cloud server</span>
+      </div>
+    </div>
+
+    <!-- 10. FIXED BOTTOM NAV (hides when partner CTAs are on-screen) -->
+    <div class="bottom-nav" id="bottom-nav">
+      <a class="btn btn--secondary btn--download btn--compact" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+        <img class="btn__icon" src="./webxdc-icon.png" width="18" height="18" alt="" />
+        .xdc
+      </a>
+      <a class="btn btn--primary" href="./app/">Open webapp</a>
+    </div>
+
+    <!-- Lightbox: image stage + fixed edge controls (prev / next / close) -->
+    <div
+      id="lightbox"
+      class="lb"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image preview"
+    >
+      <div class="lb-overlay" data-lb-close tabindex="-1"></div>
+
+      <!-- Screen-edge controls (always visible, like the earlier landing lightbox) -->
+      <button type="button" class="lb-prev" aria-label="Previous image">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <button type="button" class="lb-next" aria-label="Next image">
+        <span aria-hidden="true">›</span>
+      </button>
+      <button type="button" class="lb-close" data-lb-close aria-label="Close">
+        <span aria-hidden="true">×</span>
+      </button>
+
+      <div class="lb-outer">
+        <div class="lb-container">
+          <img class="lb-image" alt="" />
+          <div class="lb-loader" aria-hidden="true"><div class="lb-loader-inner"></div></div>
+        </div>
+        <div class="lb-data">
+          <div class="lb-details">
+            <div class="lb-caption"></div>
+            <div class="lb-number"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./landing.js" defer></script>
+    <script src="./lightbox.js" defer></script>
+  </body>
+</html>

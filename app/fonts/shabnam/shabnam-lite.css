@@ -1,0 +1,50 @@
+/* Shabnam lite — Regular (400) + Bold (700) only, woff2 only.
+ * Smaller WebXDC package for Persian UI without all intermediate weights. */
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Map other weights to the two we ship so UI stays consistent. */
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam-Bold.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shabnam';
+  src: url('./Shabnam-Bold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}

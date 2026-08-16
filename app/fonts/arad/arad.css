@@ -1,0 +1,2 @@
+/* Default = full Arad. Lite packages rewrite this at pack time. */
+@import './arad-full.css';

@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="fa" dir="rtl" data-asset-base="../" data-screenshot-dir="screenshots/fa">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="ویرایشگر XEditor — ویرایشگر بلوکی و مشارکتی برای دلتا چت (Delta Chat). صفحه‌های اشتراکی، دیدگاه‌ها، درون‌ریزی/برون‌بری، حضور زنده — در قالب یک فایل .xdc و بدون نیاز به سرور ابری."
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <title>ویرایشگر «XEditor» — ویرایشگر بلوکی و مشارکتی برای دلتا چت</title>
+    <link rel="icon" href="../app/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" href="../app/icon.png" />
+    <link rel="alternate" hreflang="en" href="../" />
+    <link rel="alternate" hreflang="fa" href="./" />
+    <!-- Same Arad + Shabnam faces as the editor (files under ../app/fonts/) -->
+    <link rel="stylesheet" href="../editor-fonts.css" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body class="xeditor-type">
+    <div class="presence-layer" id="presence-layer" aria-hidden="true"></div>
+
+    <div class="page">
+      <section class="first-screen" id="about">
+        <div class="hero">
+          <div class="hero__logo reveal" data-delay="0.05">
+            <img class="hero__logo-icon" src="../app/icon.png" width="56" height="56" alt="X" />
+            <span class="hero__logo-text">XEditor</span>
+          </div>
+          <p class="hero__tag reveal" data-delay="0.15">ویرایشگر بلوکی و مشارکتی برای دلتا چت (Delta Chat)</p>
+          <h1 class="hero__title reveal" data-delay="0.25">
+            با یکدیگر بنویسید؛<br />
+            <em>درون همان گفت‌وگو.</em>
+          </h1>
+          <div class="hero__copy" id="hero-copy">
+            <p
+              class="hero__type"
+              data-text="ویرایشگر «XEditor» یک فضای کاری بلوکیِ کامل در قالب یک برنامهٔ تک‌فایلیِ .xdc برای پلتفرم WebXDC است. کافی است آن را در دلتا چت (Delta Chat) بفرستید؛ همهٔ اعضا به صفحه‌ها، دیدگاه‌ها و وضعیت حضور یکسان دسترسی خواهند داشت؛ بدون نیاز به ساخت حساب کاربری یا راه‌اندازی سرور اختصاصی."
+            ></p>
+            <p
+              class="hero__type"
+              data-text="بلوک‌ها، صفحه‌های تو‌در‌تو، درون‌ریزی و برون‌بری، «پالت دستورها» (Command Palette)، همگام‌سازی محلی یا بی‌درنگ — همان رابط کاربری نسخهٔ آزمایشی مرورگر را مستقیماً درون گفت‌وگو دریافت می‌کنید."
+            ></p>
+            <p
+              class="hero__type"
+              data-text="نسخهٔ آزمایشی را به‌صورت رایگان باز کنید یا فایل نهایی را برای همگام‌سازی چندکاربره دریافت نمایید."
+            ></p>
+          </div>
+          <p class="hero__meta reveal" data-delay="0.55">
+            v0.1.27 ·
+            <a href="https://github.com/omidz4t/xeditor/releases/tag/v0.1.27">نسخهٔ منتشرشده</a> ·
+            <a href="../versions.html">همهٔ نسخه‌ها</a>
+            ·
+            <a href="../" lang="en" hreflang="en">English</a>
+          </p>
+        </div>
+
+        <div class="marquee" aria-label="Product screenshots">
+          <div class="marquee__track" id="marquee-track"></div>
+        </div>
+      </section>
+
+      <section class="quote-section">
+        <div class="quote-section__inner">
+          <div class="quote-mark-wrap reveal" data-delay="0.1" aria-hidden="true">
+            <svg class="quote-mark" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path
+                d="M7.17 6C5.42 6 4 7.43 4 9.2c0 1.4.9 2.6 2.17 3.05L5 18h4.2l1.3-5.2C11.5 11.2 10.1 9.4 8.3 8.7 8.7 7.3 9.9 6.4 11.3 6.1L10.7 4.5C9.2 4.9 7.9 5.3 7.17 6zm9.5 0C14.92 6 13.5 7.43 13.5 9.2c0 1.4.9 2.6 2.17 3.05L14.5 18H18.7l1.3-5.2c1-1.6-.4-3.4-2.2-4.1.4-1.4 1.6-2.3 3-2.6L20.2 4.5c-1.5.4-2.8.8-3.53 1.5z"
+              />
+            </svg>
+          </div>
+          <blockquote class="reveal" data-delay="0.2">
+            ساخته‌شده برای گفت‌وگو — نه یک سند ابری دیگر که نیازمند ورود به حساب کاربری باشد
+          </blockquote>
+          <p class="quote-author reveal" data-delay="0.3">ویرایشگر XEditor · پلتفرم WebXDC</p>
+          <div class="logo-row reveal" data-delay="0.4">
+            <a
+              class="logo-row__link"
+              href="https://yjs.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img class="logo-row__icon" src="../logos/yjs.svg" width="28" height="28" alt="" />
+              <span>Yjs</span>
+            </a>
+            <a
+              class="logo-row__link"
+              href="https://svelte.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img class="logo-row__icon" src="../logos/svelte.svg" width="28" height="28" alt="" />
+              <span>Svelte</span>
+            </a>
+            <a
+              class="logo-row__link"
+              href="https://delta.chat/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                class="logo-row__icon"
+                src="../logos/deltachat.svg"
+                width="28"
+                height="28"
+                alt=""
+              />
+              <span>Delta Chat</span>
+            </a>
+          </div>
+        </div>
+        <div class="parallax-wrap reveal" data-delay="0.5">
+          <img
+            class="parallax-img"
+            id="parallax-img"
+            src="../screenshots/fa/app-editor.jpg"
+            alt="ویرایشگر بلوکی"
+            width="1280"
+            height="800"
+          />
+        </div>
+      </section>
+
+      <section class="pricing" id="download">
+        <div class="pricing__grid">
+          <article class="price-card price-card--dark reveal" data-delay="0.1">
+            <h3>app.xdc</h3>
+            <p>بستهٔ پیش‌فرض برای استفادهٔ روزمره در دلتا چت (Delta Chat) — به‌همراه قلم‌های آراد (همهٔ وزن‌ها).</p>
+            <div class="price-card__price">
+              <strong>500 KB</strong>
+              <span>حجم بسته · رایگان و متن‌باز</span>
+            </div>
+            <div class="price-card__actions">
+              <a class="btn btn--on-dark btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+                <img class="btn__icon" src="../webxdc-icon.png" width="20" height="20" alt="" />
+                .xdc
+                <span class="btn__size">500 KB</span>
+              </a>
+              <a class="btn btn--ghost-on-dark" href="../app/">اجرای برنامهٔ وب</a>
+            </div>
+          </article>
+          <article class="price-card price-card--light reveal" data-delay="0.2">
+            <h3>بسته‌های کامل و سبک</h3>
+            <p>
+              بستهٔ کامل = فقط قلم آراد (همهٔ وزن‌ها). بستهٔ سبک = شبنم + آراد (عادی + پررنگ) برای حجم کمتر.
+            </p>
+            <div class="price-card__price">
+              <strong>500 KB · 436 KB</strong>
+              <span>editor-full · editor-lite</span>
+            </div>
+            <div class="price-card__actions">
+              <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-full.xdc">
+                کامل (آراد)
+                <span class="btn__size">500 KB</span>
+              </a>
+              <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-lite.xdc">
+                سبک
+                <span class="btn__size">436 KB</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="carousel-section" id="features">
+        <div class="carousel-head">
+          <h2 class="reveal" data-delay="0.1">امکانات و قابلیت‌ها</h2>
+          <div class="carousel__nav reveal" data-delay="0.2" id="feature-carousel-nav">
+            <button type="button" class="circle-btn" id="carousel-prev" aria-label="قبلی">‹</button>
+            <button type="button" class="circle-btn" id="carousel-next" aria-label="بعدی">›</button>
+          </div>
+        </div>
+        <div class="carousel" id="feature-carousel">
+          <div class="carousel__viewport">
+            <div class="carousel__track" id="carousel-track"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="projects" id="tour">
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>«بوم بلوکی» (Block Canvas)</h3>
+            <p>عنوان‌ها، فهرست‌ها، کارها، بخش‌های بازشونده، کدها، جدول‌ها، تصویرها، نظرسنجی‌ها — منوی اسلش و چسباندن متن مارک‌داون.</p>
+          </div>
+          <img src="../screenshots/fa/app-editor.jpg" alt="ویرایشگر بلوکی" class="project__img shot-img" />
+        </article>
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>«دیدگاه‌ها» (Comments)</h3>
+            <p>رشته‌دیدگاه‌ها و پاسخ‌ها در پنل کناری — گفت‌وگو بدون نیاز به خروج از سند.</p>
+          </div>
+          <img src="../screenshots/fa/app-comments.jpg" alt="پنل دیدگاه‌ها" class="project__img shot-img" />
+        </article>
+        <article class="project reveal">
+          <div class="project__text">
+            <h3>«درون‌ریزی و پیوند» (Import &amp; Bind)</h3>
+            <p>فایل‌های مارک‌داون، پوشه‌ها، فایل‌های ZIP و فایل JSON فضای کاری — باز کردن یا اتصال از طریق یک پنجره.</p>
+          </div>
+          <img src="../screenshots/fa/app-import.jpg" alt="پنجرهٔ درون‌ریزی" class="project__img shot-img" />
+        </article>
+      </section>
+
+      <section class="partner" id="try">
+        <div class="partner__stage" id="partner-stage">
+          <h2 class="partner__title reveal" data-delay="0.1">اجرا درون گفت‌وگو</h2>
+          <div class="partner__actions reveal" data-delay="0.2" id="partner-actions">
+            <a class="btn btn--secondary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+              <img class="btn__icon" src="../webxdc-icon.png" width="20" height="20" alt="" />
+              .xdc
+            </a>
+            <a class="btn btn--primary" href="../app/">اجرای برنامهٔ وب</a>
+          </div>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <a class="btn btn--primary btn--download" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+            <img class="btn__icon btn__icon--on-dark" src="../webxdc-icon.png" width="20" height="20" alt="" />
+            دانلود .xdc
+          </a>
+          <div class="site-footer__links">
+            <span class="site-footer__arrow" aria-hidden="true">↗</span>
+            <nav>
+              <a href="#features">قابلیت‌ها</a>
+              <a href="#tour">معرفی تصویری</a>
+              <a href="#download">دانلود</a>
+            </nav>
+            <nav>
+              <a href="https://github.com/omidz4t/xeditor" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://webxdc.org/" target="_blank" rel="noopener">WebXDC</a>
+              <a href="https://delta.chat/" target="_blank" rel="noopener">Delta Chat</a>
+            </nav>
+          </div>
+        </div>
+      </footer>
+
+      <div class="copyright">
+        <span>XEditor · v0.1.27</span>
+        <span>پلتفرم WebXDC · بدون نیاز به سرور ابری</span>
+      </div>
+    </div>
+
+    <div class="bottom-nav" id="bottom-nav">
+      <a class="btn btn--secondary btn--download btn--compact" href="https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc">
+        <img class="btn__icon" src="../webxdc-icon.png" width="18" height="18" alt="" />
+        .xdc
+      </a>
+      <a class="btn btn--primary" href="../app/">اجرای برنامهٔ وب</a>
+    </div>
+
+    <div
+      id="lightbox"
+      class="lb"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-label="پیش‌نمایش تصویر"
+    >
+      <div class="lb-overlay" data-lb-close tabindex="-1"></div>
+
+      <button type="button" class="lb-prev" aria-label="تصویر قبلی">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <button type="button" class="lb-next" aria-label="تصویر بعدی">
+        <span aria-hidden="true">›</span>
+      </button>
+      <button type="button" class="lb-close" data-lb-close aria-label="بستن">
+        <span aria-hidden="true">×</span>
+      </button>
+
+      <div class="lb-outer">
+        <div class="lb-container">
+          <img class="lb-image" alt="" />
+          <div class="lb-loader" aria-hidden="true"><div class="lb-loader-inner"></div></div>
+        </div>
+        <div class="lb-data">
+          <div class="lb-details">
+            <div class="lb-caption"></div>
+            <div class="lb-number"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.LANDING_FEATURES = [
+        {
+          title: '«بوم بلوکی» (Block Canvas)',
+          body: 'عنوان‌ها، فهرست‌ها، کارها، کدها، جدول‌ها، تصویرها و نظرسنجی‌ها — یک ویرایشگر کامل درون گفت‌وگو.',
+          detail:
+            'ویرایشگر XEditor یک فضای کاری بلوکیِ واقعی است، نه یک کادر متنی ساده. دستورهای اسلش و چسباندن متن با ساختار «مارک‌داون» (Markdown) به شما کمک می‌کنند نوشته‌های خود را همانند برنامه‌های پیشرفتهٔ نگارش سند ساختاردهی کنید و سپس همان بوم را در قالب یک فایل .xdc درون دلتا چت به اشتراک بگذارید.',
+          points: [
+            'عنوان‌ها، فهرست‌ها، کارهای انجام‌دادنی، بخش‌های بازشونده، نقل‌قول‌ها و کادرهای برجسته',
+            'بلوک‌های کد، جدول‌ها، تصویرها و نظرسنجی‌ها',
+            'منوی اسلش به‌همراه چسباندن متن‌های مارک‌داون برای نگارش سریع',
+            'حفظ کامل ساختار تو‌در‌تو هنگام اشتراک‌گذاری برنامه',
+          ],
+          img: './screenshots/fa/app-editor.jpg',
+        },
+        {
+          title: '«نوار کناری صفحه‌ها» (Pages Sidebar)',
+          body: 'صفحه‌های تو‌در‌تو، جست‌وجو و ناوبری با حس یک فضای کاری واقعی.',
+          detail:
+            'تمام یک پروژه را در قالب صفحه‌های پیوندخورده سازمان‌دهی کنید. نوار کناری نقشهٔ راهنمای شما است: میان یادداشت‌ها جابه‌جا شوید، صفحه‌ها را زیر صفحه‌های دیگر قرار دهید و هماهنگی همهٔ اعضا را در یک فضای کاری حفظ کنید.',
+          points: [
+            'ساختار درختی و تو‌در‌توی صفحه‌ها با سلسله‌مراتب شفاف',
+            'جست‌وجوی سریع میان تمام صفحه‌ها',
+            'همگام ماندن روی یک مجموعه سند اشتراکی درون گفت‌وگو',
+            'قابلیت جمع‌شدن نوار کناری در صفحه‌نمایش‌های کوچک',
+          ],
+          img: './screenshots/fa/app-sidebar.jpg',
+        },
+        {
+          title: '«پالت دستورها» (Command Palette)',
+          body: 'فشردن کلیدهای میان‌بر Ctrl+K برای دسترسی به صفحه‌ها، پوسته‌ها، چیدمان و میان‌برها بدون برداشتن دست از صفحه‌کلید.',
+          detail:
+            'کاربران حرفه‌ای تمرکز خود را از دست نمی‌دهند. با باز کردن پالت دستورها، بدون نیاز به جست‌وجو در منوها میان صفحه‌ها جابه‌جا شوید، پوسته را تغییر دهید، چیدمان را تنظیم کنید یا دستورهای گوناگون را به اجرا درآورید.',
+          points: [
+            'باز کردن سریع در هر زمان با کلیدهای میان‌بر Ctrl+K یا ⌘K',
+            'انتقال آنی به هر صفحه بر پایهٔ نام آن',
+            'دسترسی سریع به تنظیمات پوسته، چیدمان و عملکردهای برنامه',
+            'طراحی مبتنی بر صفحه‌کلید با عملکرد عالی در رایانه‌های رومیزی',
+          ],
+          img: './screenshots/fa/app-command-palette.jpg',
+        },
+        {
+          title: '«دیدگاه‌ها» (Comments)',
+          body: 'گفتگوهای زنجیره‌ای و پاسخ‌ها در هر صفحه تا بحث‌ها درست در کنار متن اصلی باقی بمانند.',
+          detail:
+            'بدون خروج از سند گفت‌وگو کنید. رشته‌دیدگاه‌ها و پاسخ‌ها در کنار محتوا نمایش داده می‌شوند تا بازخوردها، تصمیم‌ها و پرسش‌ها همواره متصل به نوشتهٔ مربوط باقی بمانند.',
+          points: [
+            'رشته‌دیدگاه‌ها در سطح هر صفحه',
+            'حفظ زمینهٔ گفت‌وگو در کنار متن با ثبت پاسخ‌ها',
+            'رابط کاربری در قالب پنل جانبی بدون نیاز به زبانهٔ جداگانه برای گفت‌وگو',
+            'هماهنگ با قابلیت نمایش حضور زندهٔ کاربران درون گفت‌وگو',
+          ],
+          img: './screenshots/fa/app-comments.jpg',
+        },
+        {
+          title: '«درون‌ریزی / پیوند» (Import / Bind)',
+          body: 'پشتیبانی از مارک‌داون، پوشه‌ها، فایل‌های فشردهٔ ZIP و فایل JSON فضای کاری از طریق یک پنجرهٔ واحد برای باز کردن و اتصال.',
+          detail:
+            'یادداشت‌های پیشین خود را وارد کنید یا یک پوشه را متصل نمایید تا فایل‌های سیستم شما و ویرایشگر همگام بمانند. یک پنجرهٔ واحد، تمامی مراحل باز کردن، درون‌ریزی و اتصال فایل‌های مارک‌داون و JSON فضای کاری را پوشش می‌دهد.',
+          points: [
+            'درون‌ریزی فایل‌های مارک‌داون، پوشه‌ها یا بایگانی‌های ZIP',
+            'باز کردن فایل‌های پشتیبان JSON فضای کاری',
+            'اتصال به یک پوشه برای جریان‌های کاری مداوم محلی',
+            'تجربهٔ کاربری یکسان در نسخهٔ آزمایشی مرورگر و بستهٔ .xdc',
+          ],
+          img: './screenshots/fa/app-import.jpg',
+        },
+      ]
+    </script>
+    <script src="../landing.js" defer></script>
+    <script src="../lightbox.js" defer></script>
+  </body>
+</html>

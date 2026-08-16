@@ -1,0 +1,332 @@
+{
+  "generatedAt": "2026-08-16T16:06:06.729Z",
+  "repo": "omidz4t/xeditor",
+  "latest": {
+    "version": "0.1.27",
+    "tag": "v0.1.27",
+    "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.27",
+    "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+    "assets": {
+      "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc",
+      "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-full.xdc",
+      "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-lite.xdc"
+    },
+    "sizes": {
+      "app": 512335,
+      "full": 512335,
+      "lite": 446091,
+      "appLabel": "500 KB",
+      "fullLabel": "500 KB",
+      "liteLabel": "436 KB"
+    }
+  },
+  "versions": [
+    {
+      "version": "0.1.27",
+      "tag": "v0.1.27",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.27",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.27/editor-lite.xdc"
+      },
+      "sizes": {
+        "app": 512335,
+        "full": 512335,
+        "lite": 446091,
+        "appLabel": "500 KB",
+        "fullLabel": "500 KB",
+        "liteLabel": "436 KB"
+      }
+    },
+    {
+      "version": "0.1.26",
+      "tag": "v0.1.26",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.26",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.26/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.26/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.26/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.25",
+      "tag": "v0.1.25",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.25",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.25/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.25/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.25/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.24",
+      "tag": "v0.1.24",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.24",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.24/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.24/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.24/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.23",
+      "tag": "v0.1.23",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.23",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.23/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.23/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.23/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.22",
+      "tag": "v0.1.22",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.22",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.22/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.22/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.22/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.21",
+      "tag": "v0.1.21",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.21",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.21/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.21/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.21/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.20",
+      "tag": "v0.1.20",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.20",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.20/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.20/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.20/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.19",
+      "tag": "v0.1.19",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.19",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.19/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.19/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.19/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.18",
+      "tag": "v0.1.18",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.18",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.18/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.18/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.18/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.17",
+      "tag": "v0.1.17",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.17",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.17/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.17/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.17/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.16",
+      "tag": "v0.1.16",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.16",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.16/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.16/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.16/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.15",
+      "tag": "v0.1.15",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.15",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.15/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.15/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.15/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.14",
+      "tag": "v0.1.14",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.14",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.14/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.14/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.14/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.13",
+      "tag": "v0.1.13",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.13",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.13/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.13/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.13/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.12",
+      "tag": "v0.1.12",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.12",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.12/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.12/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.12/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.11",
+      "tag": "v0.1.11",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.11",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.11/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.11/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.11/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.10",
+      "tag": "v0.1.10",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.10",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.10/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.10/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.10/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.9",
+      "tag": "v0.1.9",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.9",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.9/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.9/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.9/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.8",
+      "tag": "v0.1.8",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.8",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.8/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.8/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.8/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.7",
+      "tag": "v0.1.7",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.7",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.7/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.7/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.7/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.6",
+      "tag": "v0.1.6",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.6",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.6/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.6/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.6/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.5",
+      "tag": "v0.1.5",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.5",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.5/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.5/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.5/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.4",
+      "tag": "v0.1.4",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.4",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.4/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.4/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.4/editor-lite.xdc"
+      },
+      "sizes": null
+    },
+    {
+      "version": "0.1.3",
+      "tag": "v0.1.3",
+      "releaseUrl": "https://github.com/omidz4t/xeditor/releases/tag/v0.1.3",
+      "releasesUrl": "https://github.com/omidz4t/xeditor/releases",
+      "assets": {
+        "app": "https://github.com/omidz4t/xeditor/releases/download/v0.1.3/app.xdc",
+        "full": "https://github.com/omidz4t/xeditor/releases/download/v0.1.3/editor-full.xdc",
+        "lite": "https://github.com/omidz4t/xeditor/releases/download/v0.1.3/editor-lite.xdc"
+      },
+      "sizes": null
+    }
+  ]
+}

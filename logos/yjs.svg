@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Yjs">
+  <title>Yjs</title>
+  <!-- Simplified Y monogram inspired by Yjs brand (CRDT lib) -->
+  <rect width="32" height="32" rx="8" fill="#212121"/>
+  <path
+    fill="#FFE66D"
+    d="M9.2 7.2h4.1l2.7 6.6 2.7-6.6h4.1l-4.85 10.5V24.8h-4V17.7L9.2 7.2z"
+  />
+  <circle cx="24.2" cy="22.4" r="2.35" fill="#6C63FF"/>
+</svg>
