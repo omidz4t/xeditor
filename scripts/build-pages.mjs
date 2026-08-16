@@ -312,6 +312,29 @@ if (shotsSrc) {
   mkdirSync(shotsOut, { recursive: true })
   cpSync(shotsSrc, shotsOut, { recursive: true })
   console.log(`  screenshots ← ${relative(root, shotsSrc)}/`)
+
+  // /fa/ reads screenshots/fa/*.jpg. If locale capture is missing, pair with EN shots
+  // so the Persian landing never 404s images.
+  const faOut = join(shotsOut, 'fa')
+  const needed = [
+    'app-editor.jpg',
+    'app-editor-2.jpg',
+    'app-editor-3.jpg',
+    'app-editor-4.jpg',
+    'app-sidebar.jpg',
+    'app-comments.jpg',
+    'app-import.jpg',
+    'app-command-palette.jpg',
+    'app-settings.jpg',
+    'app-sync-setup.jpg',
+  ]
+  mkdirSync(faOut, { recursive: true })
+  for (const name of needed) {
+    const dest = join(faOut, name)
+    if (existsSync(dest)) continue
+    const src = join(shotsOut, name)
+    if (existsSync(src)) cpSync(src, dest)
+  }
 } else {
   console.warn('  warning: no screenshots dir (dist/screenshots or docs/screenshots)')
 }

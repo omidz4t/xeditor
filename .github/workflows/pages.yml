@@ -144,6 +144,11 @@ jobs:
           test -f dist/screenshots/manifest.json
           ls -la dist/screenshots/*.jpg | head -40
 
+          # Farsi landing shots (editor chrome LTR; demo copy from screenshot-demo.fa.md)
+          OUT_DIR=dist/screenshots/fa node scripts/screenshot-app.mjs --locale fa \
+            --only app-editor,app-sidebar,app-comments,app-import,app-command-palette,app-settings,app-sync-setup
+          test -f dist/screenshots/fa/app-editor.jpg
+
       - name: Rebuild Pages with fresh screenshots
         env:
           XEDITOR_VERSION: ${{ steps.version.outputs.version }}
@@ -169,6 +174,9 @@ jobs:
           test -f dist-pages/screenshots/app-editor.jpg
           test -f dist-pages/screenshots/app-sidebar.jpg
           test -f dist-pages/screenshots/app-comments.jpg
+          test -f dist-pages/screenshots/fa/app-editor.jpg
+          test -f dist-pages/fa/index.html
+          ! grep -q '__XEDITOR_VERSION__' dist-pages/fa/index.html
           test -f dist-xdc/app.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
