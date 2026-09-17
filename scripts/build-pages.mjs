@@ -165,11 +165,11 @@ function readLocalXdcSizes() {
   return sizes
 }
 
-/** Default .xdc filename on GitHub Releases. 0.1.26 and earlier shipped as app.xdc. */
+/** Default .xdc filename on GitHub Releases. 0.1.27 and earlier shipped as app.xdc. */
 function defaultXdcName(version) {
   const v = String(version).replace(/^v/, '')
   const [maj, min, pat] = v.split('.').map((n) => Number.parseInt(n, 10))
-  if (maj === 0 && min === 1 && Number.isFinite(pat) && pat <= 26) return 'app.xdc'
+  if (maj === 0 && min === 1 && Number.isFinite(pat) && pat <= 27) return 'app.xdc'
   return 'xeditor.xdc'
 }
 
