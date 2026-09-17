@@ -166,6 +166,24 @@ describe('blocksToMarkdown', () => {
     expect(md).not.toMatch(/\\[\(\)\.\-]/)
   })
 
+  it('round-trips a collapse block with its body', () => {
+    const blocks = [
+      createBlock('toggle', { content: [{ text: 'Section' }] }),
+      createBlock('paragraph', { content: [{ text: 'Inside' }], props: { indent: 1 } }),
+    ]
+    const md = blocksToMarkdown(blocks)
+    expect(md).toContain('<details')
+    expect(md).toContain('<summary>Section</summary>')
+    expect(md).toContain('Inside')
+    expect(md.indexOf('Inside')).toBeLessThan(md.indexOf('</details>'))
+
+    const parsed = markdownToBlocks(md)
+    expect(parsed[0]?.type).toBe('toggle')
+    expect(parsed.some((b) => b.content.some((s) => s.text === 'Inside'))).toBe(true)
+    const inside = parsed.find((b) => b.content.some((s) => s.text === 'Inside'))
+    expect(inside?.props.indent).toBe(1)
+  })
+
   it('exports links without escaping path dots or parentheses', () => {
     const blocks = [
       createBlock('paragraph', {

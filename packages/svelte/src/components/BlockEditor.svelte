@@ -6,7 +6,9 @@ import {
   writeBlocksToClipboardData,
   fileToDataUrl,
   getClipboardImageFiles,
+  clipboardPrefersUrlOverImages,
   isEmbeddableImageUrl,
+  isPlainHttpUrl,
   caretPointFromClient,
   getCaretClientRect,
   getSelectionClientRect,
@@ -27,6 +29,7 @@ import {
   isCrossBlockTextRange,
   isNonTextBlockCoveredByRange,
   isTextRangeCollapsed,
+  normalizeTextRange,
   resolveArrowNavTarget,
   rangeHasMarkAcrossSegments,
   rangeMarkValueAcrossSegments,
@@ -37,6 +40,7 @@ import {
   patchTableCellsBackground,
   patchTableStyle,
   isTextBlock,
+  isPastedTextMergeable,
   buildBlockDirectionMap,
   buildBlockRenderTree,
   ensureTogglePlaceholder,
@@ -398,7 +402,50 @@ return
   }
 
   clearBlockSelection()
-  void tick().then(() => itemRefs.get(id)?.focusAt(pos))
+  void tick().then(() => {
+    itemRefs.get(id)?.focusAt(pos)
+    ensureBlockInView(id)
+  })
+}
+
+/**
+ * If the caret / block sits outside the visible #app scrollport, scroll just
+ * enough to keep it on screen (Down at the bottom of the page, Up at the top).
+ */
+function ensureBlockInView(id: string) {
+  requestAnimationFrame(() => {
+    const host = rootEl?.querySelector(`[data-block-id="${CSS.escape(id)}"]`) as HTMLElement | null
+    if (!host) return
+
+    const parent =
+      getMarqueeScrollParent()
+      ?? (document.getElementById('app') as HTMLElement | null)
+    if (!parent) {
+      host.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      return
+    }
+
+    const padTop = 80
+    const padBottom = 64
+    const view = parent.getBoundingClientRect()
+    const active = document.activeElement
+    const caret = getCaretClientRect()
+    const target =
+      caret && active instanceof Node && host.contains(active)
+        ? caret
+        : host.getBoundingClientRect()
+
+    const topLimit = view.top + padTop
+    const bottomLimit = view.bottom - padBottom
+
+    let dy = 0
+    if (target.bottom > bottomLimit) dy = target.bottom - bottomLimit
+    else if (target.top < topLimit) dy = target.top - topLimit
+    if (dy === 0) return
+
+    const max = Math.max(0, parent.scrollHeight - parent.clientHeight)
+    parent.scrollTop = Math.min(max, Math.max(0, parent.scrollTop + dy))
+  })
 }
 
 function blockLength(block: Block): number {
@@ -769,11 +816,10 @@ function selectBlock(id: string) {
   bubble = null
   window.getSelection()?.removeAllRanges()
   void tick().then(() => {
-    if (shouldKeepNativeFocus()) {
-      return
+    if (!shouldKeepNativeFocus()) {
+      rootEl?.focus()
     }
-
-    rootEl?.focus()
+    ensureBlockInView(id)
   })
 }
 
@@ -1279,14 +1325,115 @@ function blockIdFromEventTarget(target: EventTarget | null): string | null {
 }
 
 /**
- * Shift+↑/↓: select whole current line (block) and the line above/below.
- * Runs even when focus is inside contenteditable (before native-input early-out).
+ * Highlight every visible row from `anchorId` through `focusId` (inclusive).
+ * Keeps block selection so Shift+↑/↓ can grow/shrink the set, and paints a
+ * text range across the text rows in between.
+ */
+function applyRowRangeSelection(anchorId: string, focusId: string) {
+  const a = visibleIndex(anchorId)
+  const f = visibleIndex(focusId)
+  if (a === -1 || f === -1) return
+
+  const lo = Math.min(a, f)
+  const hi = Math.max(a, f)
+  const span = visibleBlocks.slice(lo, hi + 1)
+  setSelectedBlocks(span.map((b) => b.id))
+
+  const textOnes = span.filter((b) => isTextBlock(b.type) || b.type === 'code')
+  if (textOnes.length > 0) {
+    const first = textOnes[0]!
+    const last = textOnes[textOnes.length - 1]!
+    const anchorFirst = a <= f
+    textRangeSelection = {
+      anchor: anchorFirst
+        ? { blockId: first.id, offset: 0 }
+        : { blockId: last.id, offset: blockLength(last) },
+      focus: anchorFirst
+        ? { blockId: last.id, offset: blockLength(last) }
+        : { blockId: first.id, offset: 0 },
+    }
+    managedTextSelection = true
+  } else {
+    textRangeSelection = null
+    managedTextSelection = false
+  }
+
+  focusedBlockId = null
+  closeSlash()
+  bubble = null
+  window.getSelection()?.removeAllRanges()
+  void tick().then(() => rootEl?.focus())
+}
+
+/** Grow or shrink the selected rows by one visible block in `dir`. */
+function extendRowSelection(dir: 1 | -1): boolean {
+  const selected = selectedBlocksInOrder()
+  const selectedIds = new Set(selected.map((b) => b.id))
+
+  let anchorId =
+    textRangeSelection?.anchor.blockId
+    ?? selectedBlockId
+    ?? (dir === -1 ? selected[selected.length - 1]?.id : selected[0]?.id)
+    ?? null
+  if (anchorId && selectedIds.size > 0 && !selectedIds.has(anchorId)) {
+    anchorId = dir === -1 ? selected[selected.length - 1]!.id : selected[0]!.id
+  }
+
+  let focusId =
+    textRangeSelection?.focus.blockId
+    ?? (dir === -1 ? selected[0]?.id : selected[selected.length - 1]?.id)
+    ?? selectedBlockId
+    ?? null
+
+  if (!anchorId || !focusId) return false
+
+  const neighbor = neighborBlock(focusId, dir)
+  if (!neighbor) {
+    void tick().then(() => rootEl?.focus())
+    return true
+  }
+
+  applyRowRangeSelection(anchorId, neighbor.id)
+  return true
+}
+
+function wholeLineSelectedIn(block: Block): boolean {
+  const len = blockLength(block)
+  if (len === 0) return true
+  const sel = itemRefs.get(block.id)?.getSelection()
+  if (sel && sel.end > sel.start && sel.start === 0 && sel.end >= len) return true
+  if (
+    hasActiveManagedSelection()
+    && textRangeSelection
+    && textRangeSelection.anchor.blockId === block.id
+    && textRangeSelection.focus.blockId === block.id
+  ) {
+    const start = Math.min(textRangeSelection.anchor.offset, textRangeSelection.focus.offset)
+    const end = Math.max(textRangeSelection.anchor.offset, textRangeSelection.focus.offset)
+    return start === 0 && end >= len
+  }
+  return false
+}
+
+/**
+ * Shift+↑/↓: select the whole current row and the row above/below.
+ * Works from block-select (one highlighted row), a managed line selection,
+ * or a caret/selection on the first/last visual line of a text block.
  */
 function handleShiftArrowLineSelect(e: KeyboardEvent): boolean {
+  if (e.defaultPrevented) return false
   if (!e.shiftKey || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return false
   if (e.altKey || e.ctrlKey || e.metaKey) return false
 
   const dir: 1 | -1 = e.key === 'ArrowDown' ? 1 : -1
+
+  // One or more rows already block-selected: add (or release) the next row.
+  if (isBlockSelectNavMode()) {
+    e.preventDefault()
+    e.stopPropagation()
+    return extendRowSelection(dir)
+  }
+
   const fromDom = blockIdFromEventTarget(e.target)
   const baseBlockId =
     textRangeSelection?.focus.blockId
@@ -1297,7 +1444,7 @@ function handleShiftArrowLineSelect(e: KeyboardEvent): boolean {
   if (!baseBlockId) return false
 
   const current = byId(baseBlockId)
-  if (!current || !isTextBlock(current.type)) return false
+  if (!current) return false
 
   const managedCross =
     hasActiveManagedSelection()
@@ -1305,13 +1452,15 @@ function handleShiftArrowLineSelect(e: KeyboardEvent): boolean {
     && isCrossBlockTextRange(textRangeSelection, visibleBlocks)
 
   // Inside a multi-line block: leave soft-line selection to the browser until
-  // the caret is on the first/last visual line (or we already span blocks).
-  if (!managedCross) {
+  // the caret is on the first/last visual line, the whole line is selected,
+  // or we already span blocks.
+  if (!managedCross && isTextBlock(current.type)) {
     const active = document.activeElement
     if (
       active instanceof HTMLElement
       && active.isContentEditable
       && rootEl?.contains(active)
+      && !wholeLineSelectedIn(current)
     ) {
       if (dir === -1 && !isCaretOnFirstLine(active)) return false
       if (dir === 1 && !isCaretOnLastLine(active)) return false
@@ -1321,42 +1470,17 @@ function handleShiftArrowLineSelect(e: KeyboardEvent): boolean {
   e.preventDefault()
   e.stopPropagation()
 
-  if (!managedCross) {
-    // First extension: full current line + full neighbor line.
-    const neighbor = neighborTextBlock(baseBlockId, dir)
-    const currentLen = blockLength(current)
-
-    if (!neighbor) {
-      // No neighbor — select the whole current line.
-      setManagedTextRange(
-        { blockId: baseBlockId, offset: dir === -1 ? currentLen : 0 },
-        { blockId: baseBlockId, offset: dir === -1 ? 0 : currentLen },
-      )
-    } else if (dir === -1) {
-      // Anchor at end of this line, focus at start of line above.
-      setManagedTextRange(
-        { blockId: baseBlockId, offset: currentLen },
-        { blockId: neighbor.id, offset: 0 },
-      )
-    } else {
-      // Anchor at start of this line, focus at end of line below.
-      setManagedTextRange(
-        { blockId: baseBlockId, offset: 0 },
-        { blockId: neighbor.id, offset: blockLength(neighbor) },
-      )
-    }
-  } else {
-    const existing = textRangeSelection!
-    const neighbor = neighborTextBlock(existing.focus.blockId, dir)
-    if (!neighbor) {
-      void tick().then(() => rootEl?.focus())
-      return true
-    }
-    const focusOffset = dir === -1 ? 0 : blockLength(neighbor)
-    setManagedTextRange(existing.anchor, { blockId: neighbor.id, offset: focusOffset })
+  if (managedCross && textRangeSelection) {
+    return extendRowSelection(dir)
   }
 
-  void tick().then(() => rootEl?.focus())
+  const neighbor = neighborBlock(baseBlockId, dir)
+  if (!neighbor) {
+    applyRowRangeSelection(baseBlockId, baseBlockId)
+    return true
+  }
+
+  applyRowRangeSelection(baseBlockId, neighbor.id)
   return true
 }
 
@@ -3247,17 +3371,55 @@ function isBlockSelectNavMode(): boolean {
   return selectedBlockIds.length > 0 || !!selectedBlockId
 }
 
+/** Drop a selection and put a collapsed caret on a text/code block. */
+function placeCaretOnBlock(id: string, pos: number | 'start' | 'end') {
+  clearTextRangeSelection()
+  clearBlockSelection()
+  focusedBlockId = id
+  void tick().then(() => {
+    focusBlock(id, pos)
+    const block = byId(id)
+    const offset =
+      pos === 'start' ? 0
+      : pos === 'end' ? (block ? blockLength(block) : 0)
+      : pos
+    itemRefs.get(id)?.setSelection?.(offset, offset)
+  })
+}
+
 /**
- * With a block selected: ArrowRight opens a toggle, ArrowLeft closes it
- * (swapped in RTL so "into" the body opens). Keeps block selection highlight.
+ * Left/Right while a line or block is selected: put the caret on that block
+ * (start on Left, end on Right; swapped in RTL). Used for collapse titles
+ * and any other selected text line — do not expand/collapse the toggle.
  */
-function handleSelectedToggleOpenClose(e: KeyboardEvent): boolean {
+function enterCaretFromSelection(e: KeyboardEvent): boolean {
   if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return false
   if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return false
-  if (!isBlockSelectNavMode()) return false
   if (editorProps.readonly) return false
 
-  // Don't steal when already editing inside a contenteditable.
+  const rtlFor = (id: string) => directionFor(id) === 'rtl'
+
+  if (hasActiveManagedSelection() && textRangeSelection) {
+    const normalized = normalizeTextRange(textRangeSelection, visibleBlocks)
+    if (!normalized) return false
+
+    e.preventDefault()
+    e.stopPropagation()
+
+    const startRtl = rtlFor(normalized.startBlockId)
+    const endRtl = rtlFor(normalized.endBlockId)
+    const useStart = startRtl === endRtl
+      ? (e.key === 'ArrowLeft') === !startRtl
+      : (e.key === 'ArrowLeft') === !endRtl
+    const id = useStart ? normalized.startBlockId : normalized.endBlockId
+    const off = useStart ? normalized.startOffset : normalized.endOffset
+    placeCaretOnBlock(id, off)
+    return true
+  }
+
+  if (!isBlockSelectNavMode()) return false
+
+  // Already editing inside the selected line — leave native caret movement.
   if (
     e.target instanceof Element
     && e.target.closest('[contenteditable="true"], input, textarea')
@@ -3266,37 +3428,19 @@ function handleSelectedToggleOpenClose(e: KeyboardEvent): boolean {
   }
 
   const selected = selectedBlocksInOrder()
-  const toggles = selected.filter((b) => b.type === 'toggle')
-  if (toggles.length === 0) return false
+  if (selected.length === 0) return false
+
+  const edgeLeft = selected[0]!
+  const edgeRight = selected[selected.length - 1]!
+  const rtl = rtlFor(e.key === 'ArrowLeft' ? edgeLeft.id : edgeRight.id)
+  const target = (e.key === 'ArrowLeft') === !rtl ? edgeLeft : edgeRight
+
+  if (!isTextBlock(target.type) && target.type !== 'code') return false
 
   e.preventDefault()
   e.stopPropagation()
-
-  let changed = false
-  for (const block of toggles) {
-    const live = byId(block.id) ?? block
-    const rtl = directionFor(live.id) === 'rtl'
-    // Open = expand toward the body (Right in LTR, Left in RTL).
-    const wantOpen = rtl ? e.key === 'ArrowLeft' : e.key === 'ArrowRight'
-    const nextCollapsed = !wantOpen
-    const currentlyCollapsed = live.props.collapsed === true
-    if (currentlyCollapsed === nextCollapsed) continue
-
-    const idx = blocks.indexOf(live)
-    // Set props without patchProps' "open → focus first child" side effect,
-    // so block selection (blue highlight) stays on the toggle.
-    const nextProps = { ...live.props, collapsed: nextCollapsed }
-    const nextBlock: Block = { ...live, props: nextProps }
-    if (idx !== -1) blocks[idx] = nextBlock
-    syncTogglePlaceholder(nextBlock, { history: false })
-    changed = true
-  }
-
-  if (changed) pushHistory(true)
-
-  // Re-assert selection after structural visibility change.
-  const keepId = selectedBlockId || toggles[0]!.id
-  if (byId(keepId)) selectBlock(keepId)
+  const atStart = (e.key === 'ArrowLeft') === !rtl
+  placeCaretOnBlock(target.id, atStart ? 'start' : 'end')
   return true
 }
 
@@ -3482,10 +3626,28 @@ function handleArrow(block: Block, dir: 1 | -1) {
     return
   }
 
-  if (isTextBlock(neighbor.type)) {
+  if (isTextBlock(neighbor.type) || neighbor.type === 'code') {
+    const caret = getCaretClientRect()
     focusBlock(neighbor.id, dir === 1 ? 'start' : 'end')
-  } else if (neighbor.type === 'code') {
-    focusBlock(neighbor.id, dir === 1 ? 'start' : 'end')
+    if (caret && rootEl && isTextBlock(neighbor.type)) {
+      const x = caret.left
+      void tick().then(() => {
+        if (!rootEl) return
+        const host = rootEl.querySelector(
+          `[data-block-id="${CSS.escape(neighbor.id)}"] [contenteditable="true"]`,
+        ) as HTMLElement | null
+        if (!host) return
+        const box = host.getBoundingClientRect()
+        if (box.width <= 0 || box.height <= 0) return
+        const y = dir === 1
+          ? box.top + Math.min(6, box.height / 2)
+          : box.bottom - Math.min(6, box.height / 2)
+        const point = caretPointFromClient(rootEl, x, y)
+        if (point?.blockId === neighbor.id) {
+          itemRefs.get(neighbor.id)?.focusAt(point.offset)
+        }
+      })
+    }
   } else {
     selectBlock(neighbor.id)
   }
@@ -3494,10 +3656,9 @@ function handleArrow(block: Block, dir: 1 | -1) {
 /**
  * Nothing block-selected: enter block-selection mode with highlight.
  *
- * - Focus on editor root / chrome: ↓ first block, ↑ last block.
- * - Caret in contenteditable (collapsed) at first/last line: leave edit mode
- *   and block-select the neighbor (or current at edge). Avoids needing Escape
- *   first to blur, then ↓.
+ * Only when focus is on the editor chrome / root — not while the caret is
+ * already in a text block. In edit mode, Up/Down keep the cursor and move
+ * it into the neighbor at the first/last line (see handleArrow).
  *
  * Returns true if the key was handled.
  */
@@ -3507,47 +3668,30 @@ function handleArrowWhenNoSelection(e: KeyboardEvent): boolean {
   if (visibleBlocks.length === 0) return false
   if (isBlockSelectNavMode() || hasActiveManagedSelection()) return false
 
-  const dir: 1 | -1 = e.key === 'ArrowDown' ? 1 : -1
-  const ids = visibleBlocks.map((b) => b.id)
   const t = e.target
 
-  // Caret inside a text/code field: only take over at the line boundary so
-  // multi-line editing still uses native Up/Down between lines.
+  // Already editing: never convert Up/Down into a block highlight.
   if (
     t instanceof Element
     && t.closest('[contenteditable="true"], textarea')
     && rootEl?.contains(t)
   ) {
-    const active =
-      document.activeElement instanceof HTMLElement
-      && rootEl.contains(document.activeElement)
-        ? document.activeElement
-        : t instanceof HTMLElement
-          ? t
-          : null
-    if (!active) return false
+    return false
+  }
 
-    const sel = window.getSelection()
-    if (sel && !sel.isCollapsed) return false
-
-    if (dir === 1 && !isCaretOnLastLine(active)) return false
-    if (dir === -1 && !isCaretOnFirstLine(active)) return false
-
-    const currentId =
-      blockIdFromEventTarget(active)
-      ?? blockIdFromEventTarget(t)
-      ?? focusedBlockId
-    if (!currentId || !ids.includes(currentId)) return false
-
-    e.preventDefault()
-    // Prefer moving to the next/previous block; at the edge, select current.
-    const targetId = resolveArrowNavTarget(ids, currentId, dir) ?? currentId
-    selectBlock(targetId)
-    return true
+  const active = document.activeElement
+  if (
+    active instanceof HTMLElement
+    && rootEl?.contains(active)
+    && (active.isContentEditable || active.closest('textarea'))
+  ) {
+    return false
   }
 
   e.preventDefault()
   // No caret / focus on root: enter at page edge (first on ↓, last on ↑).
+  const dir: 1 | -1 = e.key === 'ArrowDown' ? 1 : -1
+  const ids = visibleBlocks.map((b) => b.id)
   const targetId = resolveArrowNavTarget(ids, null, dir)
   if (!targetId) return true
   selectBlock(targetId)
@@ -3632,10 +3776,13 @@ function onDocumentBlockArrowNav(e: KeyboardEvent) {
 
   // Typing into selected block / managed range (focus usually on editor root).
   if (hasActiveManagedSelection() && typeIntoManagedTextRange(e)) return
+  if (hasActiveManagedSelection() && enterCaretFromSelection(e)) return
   if (isBlockSelectNavMode() && typeIntoSelectedBlock(e)) return
 
-  // Selected toggle: ← close / → open (RTL-aware).
-  if (handleSelectedToggleOpenClose(e)) return
+  // Selected line / collapse title: ← / → place the caret on that block.
+  if (enterCaretFromSelection(e)) return
+
+  if (handleShiftArrowLineSelect(e)) return
 
   if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
   if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return
@@ -3847,6 +3994,61 @@ function pasteAnchorBlock(): Block | null {
   return blocks[blocks.length - 1] ?? null
 }
 
+function insertPastedPlainUrl(
+  block: Block,
+  url: string,
+  offsets: { start: number; end: number },
+): boolean {
+  if (!isPlainHttpUrl(url) || isEmbeddableImageUrl(url)) {
+    return false
+  }
+
+  const href = url.trim()
+
+  if (isTextBlock(block.type)) {
+    const start = offsets.start
+    const end = offsets.end
+
+    if (end > start) {
+      block.content = applyMarkToRange(block.content, start, end, 'link', href)
+      pushHistory(true)
+      focusBlock(block.id, end)
+      return true
+    }
+
+    block.content = insertSpansAt(block.content, start, [{ text: href, marks: { link: href } }])
+    pushHistory(true)
+    focusBlock(block.id, start + href.length)
+    return true
+  }
+
+  const idx = blocks.indexOf(block)
+  if (idx === -1) return false
+
+  expandToggleAnchor(block)
+  const para = makeBlock('paragraph', {
+    content: [{ text: href, marks: { link: href } }],
+    props: blockPropsWithIndent(insertIndentForAnchor(block)),
+  })
+  blocks.splice(idx + 1, 0, para)
+  pushHistory(true)
+  focusBlock(para.id, 'end')
+  return true
+}
+
+function linkifyBareUrlBlocks(pasted: Block[]): Block[] {
+  if (pasted.length !== 1) return pasted
+
+  const first = pasted[0]
+  if (!isTextBlock(first.type)) return pasted
+
+  const text = spansToText(first.content).trim()
+  if (!isPlainHttpUrl(text) || isEmbeddableImageUrl(text)) return pasted
+  if (first.content.some((span) => span.marks?.link)) return pasted
+
+  return [{ ...first, content: [{ text, marks: { link: text } }] }]
+}
+
 async function handlePasted(
   block: Block,
   payload: { html: string; text: string; files: File[]; offsets: { start: number; end: number } },
@@ -3857,10 +4059,13 @@ async function handlePasted(
     return
   }
 
+  const preferUrl = clipboardPrefersUrlOverImages(payload.text)
+
   // Image files — capture-phase onPaste may already have handled this paste.
+  // Skip when the clipboard text is a page URL (preview bitmap / favicon).
   const imageFiles = payload.files.filter(f => f.type.startsWith('image/'))
 
-  if (imageFiles.length > 0) {
+  if (imageFiles.length > 0 && !preferUrl) {
     await insertImagesAfterBlock(block, imageFiles)
     return
   }
@@ -3887,11 +4092,20 @@ async function handlePasted(
       }
     }
   }
+  pastedBlocks = linkifyBareUrlBlocks(pastedBlocks)
   const htmlImageBlocks = pastedBlocks.filter((entry) => entry.type === 'image')
 
   // If this paste also carried image *files*, they were handled above. Never also
   // materialize <img> tags from the HTML alternative (that created duplicate blocks).
-  if (htmlImageBlocks.length > 0 && payload.files.some(f => f.type.startsWith('image/'))) {
+  if (htmlImageBlocks.length > 0 && payload.files.some(f => f.type.startsWith('image/')) && !preferUrl) {
+    return
+  }
+
+  if (
+    preferUrl
+    && (pastedBlocks.length === 0 || pastedBlocks.every((entry) => entry.type === 'image'))
+  ) {
+    insertPastedPlainUrl(block, payload.text, payload.offsets)
     return
   }
 
@@ -3990,6 +4204,10 @@ async function handlePasted(
   }
 
   if (htmlImageBlocks.length > 0 && pastedBlocks.every((entry) => entry.type === 'image')) {
+    if (clipboardPrefersUrlOverImages(payload.text)) {
+      insertPastedPlainUrl(block, payload.text, payload.offsets)
+      return
+    }
     if (imagePasteInFlight) return
     // Deduplicate identical <img src> entries (some apps paste the same image twice in HTML).
     const seenSrc = new Set<string>()
@@ -4019,7 +4237,7 @@ async function handlePasted(
   const [first, ...others] = pastedBlocks
 
   if (first.type === 'paragraph' || spansToText(block.content).length > 0) {
-    if (isTextBlock(first.type)) {
+    if (isPastedTextMergeable(first.type)) {
       block.content = insertSpansAt(content, at, first.content)
     } else {
       others.unshift(first)
@@ -4034,6 +4252,7 @@ async function handlePasted(
     expandToggleAnchor(block)
     const nestedOthers = withInsertIndent(block, others)
     blocks.splice(idx + 1, 0, ...nestedOthers)
+    afterPasteBlocks()
     pushHistory(true)
     const last = nestedOthers[nestedOthers.length - 1]
 
@@ -4041,6 +4260,7 @@ async function handlePasted(
 focusBlock(last.id, 'end')
 }
   } else {
+    afterPasteBlocks()
     pushHistory(true)
     focusBlock(block.id, at + spansToText(first.content).length)
   }
@@ -4048,11 +4268,33 @@ focusBlock(last.id, 'end')
 
 // ─── Clipboard (multi-block copy / cut / paste) ─────────────────────────────
 
+/** Include collapsed toggle/column bodies even when they are not selected. */
+function expandClipboardUnits(selected: Block[]): Block[] {
+  const want = new Set(selected.map((b) => b.id))
+  const out: Block[] = []
+  const seen = new Set<string>()
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i]
+    if (!want.has(block.id) || seen.has(block.id)) continue
+
+    const { start, end } = blockUnitSpan(blocks, i)
+    for (let j = start; j < end; j++) {
+      if (seen.has(blocks[j].id)) continue
+      seen.add(blocks[j].id)
+      out.push(cloneBlock(blocks[j]))
+    }
+  }
+
+  return out
+}
+
 function getBlocksForClipboard(): Block[] | null {
   // Full-page select (Ctrl+A): copy every selected block, including media.
   if (allVisibleBlocksSelected()) {
     const selected = selectedBlocksInOrder()
-    return selected.length > 0 ? selected.map((b) => cloneBlock(b)) : null
+    const expanded = expandClipboardUnits(selected)
+    return expanded.length > 0 ? expanded : null
   }
 
   if (hasActiveManagedSelection() && textRangeSelection) {
@@ -4091,7 +4333,7 @@ function getBlocksForClipboard(): Block[] | null {
 
   const selected = selectedBlocksInOrder()
   if (selected.length > 0) {
-    return selected
+    return expandClipboardUnits(selected)
   }
 
   return null
@@ -4111,6 +4353,12 @@ selectBlock(last.id)
 }
 }
 
+function afterPasteBlocks() {
+  if (ensureTogglePlaceholders(blocks)) {
+    touchBlocks()
+  }
+}
+
 function insertPastedInTextBlock(block: Block, pasted: Block[], offset: number) {
   const idx = blocks.indexOf(block)
 
@@ -4126,7 +4374,7 @@ function insertPastedInTextBlock(block: Block, pasted: Block[], offset: number) 
     return
   }
 
-  if (isTextBlock(first.type)) {
+  if (isPastedTextMergeable(first.type)) {
     block.content = normalizeSpans([...before, ...first.content])
     const toInsert = [...rest]
 
@@ -4162,6 +4410,7 @@ function insertPastedInTextBlock(block: Block, pasted: Block[], offset: number) 
     expandToggleAnchor(block)
     blocks.splice(idx + 1, 0, ...withInsertIndent(block, [...pasted, ...trailing]))
   }
+  afterPasteBlocks()
 }
 
 function insertBlocksFromClipboard(pasted: Block[]) {
@@ -4180,6 +4429,7 @@ return
 
       if (block && isTextBlock(block.type)) {
         insertPastedInTextBlock(block, pasted, deleteResult.focusOffset)
+        afterPasteBlocks()
         pushHistory(true)
         focusAfterPaste(pasted)
 
@@ -4213,6 +4463,7 @@ return
       expandToggleAnchor(block)
       const nested = withInsertIndent(block, pasted)
       blocks.splice(idx + 1, 0, ...nested)
+      afterPasteBlocks()
       pushHistory(true)
       focusAfterPaste(nested)
 
@@ -4237,6 +4488,7 @@ return
       blocks.splice(insertAt, 0, ...nested)
       clearBlockSelection()
       ensureNotEmpty()
+      afterPasteBlocks()
       pushHistory(true)
       focusAfterPaste(nested)
       return
@@ -4245,6 +4497,7 @@ return
 
   blocks.push(...pasted)
   ensureNotEmpty()
+  afterPasteBlocks()
   pushHistory(true)
   focusAfterPaste(pasted)
 }
@@ -4346,9 +4599,11 @@ async function onPaste(e: ClipboardEvent) {
     return
   }
 
-  // Prefer file bitmaps over HTML <img> mirrors of the same paste.
+  // Prefer file bitmaps over HTML <img> mirrors of the same paste,
+  // unless the clipboard text is a page URL (preview image / favicon).
+  const pastedText = e.clipboardData.getData('text/plain')
   const imageFiles = getClipboardImageFiles(e.clipboardData)
-  if (imageFiles.length > 0) {
+  if (imageFiles.length > 0 && !clipboardPrefersUrlOverImages(pastedText)) {
     const anchor = pasteAnchorBlock()
     if (anchor) {
       e.preventDefault()
@@ -4379,6 +4634,14 @@ async function onPaste(e: ClipboardEvent) {
     // dedupe identical src attributes before inserting.
     if (external.length > 0) {
       const onlyImages = external.every((b) => b.type === 'image')
+      if (onlyImages && clipboardPrefersUrlOverImages(text)) {
+        e.preventDefault()
+        e.stopPropagation()
+        insertBlocksFromClipboard(linkifyBareUrlBlocks([
+          makeBlock('paragraph', { content: [{ text: text.trim(), marks: { link: text.trim() } }] }),
+        ]))
+        return
+      }
       if (onlyImages) {
         const seen = new Set<string>()
         const unique = external.filter((b) => {
@@ -4400,7 +4663,7 @@ async function onPaste(e: ClipboardEvent) {
 
       e.preventDefault()
       e.stopPropagation()
-      insertBlocksFromClipboard(external)
+      insertBlocksFromClipboard(linkifyBareUrlBlocks(external))
 
       return
     }
@@ -4408,6 +4671,17 @@ async function onPaste(e: ClipboardEvent) {
     if (text) {
       e.preventDefault()
       e.stopPropagation()
+      if (clipboardPrefersUrlOverImages(text)) {
+        const href = text.trim()
+        if (hasActiveManagedSelection()) {
+          applyToolbarMark('link', href)
+          return
+        }
+        insertBlocksFromClipboard([
+          makeBlock('paragraph', { content: [{ text: href, marks: { link: href } }] }),
+        ])
+        return
+      }
       if (looksLikeMarkdown(text)) {
         const mdBlocks = markdownToBlocks(text)
         if (mdBlocks.length > 0) {
@@ -6099,6 +6373,7 @@ function onKeydownCapture(e: KeyboardEvent) {
       return
     }
     if (typeIntoManagedTextRange(e)) return
+    if (enterCaretFromSelection(e)) return
   }
 
   // Block selected (blue highlight): typing enters the block and inserts text.
@@ -6107,8 +6382,8 @@ function onKeydownCapture(e: KeyboardEvent) {
     return
   }
 
-  // Selected toggle: ← / → collapse / expand.
-  if (handleSelectedToggleOpenClose(e)) {
+  // Selected line / collapse title: ← / → place the caret on that block.
+  if (enterCaretFromSelection(e)) {
     return
   }
 
@@ -6466,6 +6741,7 @@ function onRootKeydown(e: KeyboardEvent) {
       return
     }
     if (!e.defaultPrevented && typeIntoManagedTextRange(e)) return
+    if (!e.defaultPrevented && enterCaretFromSelection(e)) return
     return
   }
 
@@ -6486,7 +6762,7 @@ function onRootKeydown(e: KeyboardEvent) {
       handleArrow(edge, e.key === 'ArrowDown' ? 1 : -1)
       return
     }
-    if (!e.defaultPrevented && handleSelectedToggleOpenClose(e)) return
+    if (!e.defaultPrevented && enterCaretFromSelection(e)) return
     if (!e.defaultPrevented && typeIntoSelectedBlock(e)) return
     return
   }
@@ -6563,8 +6839,8 @@ function onRootKeydown(e: KeyboardEvent) {
     return
   }
 
-  // Selected toggle: ← close / → open.
-  if (!e.defaultPrevented && handleSelectedToggleOpenClose(e)) {
+  // Selected line / collapse title: ← / → place the caret on that block.
+  if (!e.defaultPrevented && enterCaretFromSelection(e)) {
     return
   }
 

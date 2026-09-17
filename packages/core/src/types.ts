@@ -197,6 +197,16 @@ export function isTextBlock(type: BlockType): boolean {
   return TEXT_BLOCK_TYPES.includes(type)
 }
 
+/**
+ * Title-bearing blocks that must stay their own block on paste.
+ * A toggle is a text block (the summary is editable) but merging it into a
+ * paragraph drops the collapse wrapper — copy/paste then looks like the
+ * block vanished.
+ */
+export function isPastedTextMergeable(type: BlockType): boolean {
+  return isTextBlock(type) && type !== 'toggle'
+}
+
 export function isBlocksContent(content: unknown): content is BlocksContent {
   return (
     !!content &&

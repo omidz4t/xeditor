@@ -59,10 +59,12 @@ export function getClipboardImageFiles(data: DataTransfer): File[] {
   return files
 }
 
-export function isEmbeddableImageUrl(raw: string): boolean {
+const IMAGE_PATH_EXT = /\.(?:avif|bmp|gif|heic|heif|ico|jfif|jpe?g|png|svg|tiff?|webp)$/i
+
+/** True when `raw` is a single http(s) URL with no surrounding text. */
+export function isPlainHttpUrl(raw: string): boolean {
   const trimmed = raw.trim()
-  if (!trimmed) return false
-  if (trimmed.startsWith('data:image/')) return true
+  if (!trimmed || /\s/.test(trimmed)) return false
 
   try {
     const url = new URL(trimmed)
@@ -70,6 +72,32 @@ export function isEmbeddableImageUrl(raw: string): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * True when the clipboard string is itself an image (data URL or http(s) with
+ * a known image extension). Regular page URLs must not match — paste used to
+ * turn every https://… link into a broken image block.
+ */
+export function isEmbeddableImageUrl(raw: string): boolean {
+  const trimmed = raw.trim()
+  if (!trimmed) return false
+  if (trimmed.startsWith('data:image/')) return true
+  if (!isPlainHttpUrl(trimmed)) return false
+
+  try {
+    return IMAGE_PATH_EXT.test(new URL(trimmed).pathname)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Copying a page URL from chat apps / browsers often also puts a preview
+ * bitmap on the clipboard. Prefer the URL so paste inserts a link, not that image.
+ */
+export function clipboardPrefersUrlOverImages(text: string): boolean {
+  return isPlainHttpUrl(text) && !isEmbeddableImageUrl(text)
 }
 
 export function cloneBlocksForClipboard(blocks: Block[]): Block[] {
@@ -195,18 +223,37 @@ return ''
   }
 }
 
-/** HTML body for external apps; lists are grouped into ul/ol. */
+/** HTML body for external apps; lists are grouped into ul/ol, toggles into details. */
 export function blocksToHtmlContent(blocks: Block[]): string {
-  const parts: string[] = []
-  let i = 0
+  return renderBlocksHtml(blocks, 0, blocks.length)
+}
 
-  while (i < blocks.length) {
+function renderBlocksHtml(blocks: Block[], start: number, end: number): string {
+  const parts: string[] = []
+  let i = start
+
+  while (i < end) {
     const b = blocks[i]
+
+    if (b.type === 'toggle') {
+      const indent = b.props.indent ?? 0
+      let j = i + 1
+      while (j < end && (blocks[j].props.indent ?? 0) > indent) {
+        j++
+      }
+      const open = b.props.collapsed === false ? ' open' : ''
+      const body = renderBlocksHtml(blocks, i + 1, j)
+      parts.push(
+        `<details${open}${dirAttr(b)}><summary>${spansToHtml(b.content)}</summary>${body}</details>`,
+      )
+      i = j
+      continue
+    }
 
     if (b.type === 'bulleted_list_item') {
       const items: string[] = []
 
-      while (i < blocks.length && blocks[i].type === 'bulleted_list_item') {
+      while (i < end && blocks[i].type === 'bulleted_list_item') {
         items.push(`<li>${spansToHtml(blocks[i].content)}</li>`)
         i++
       }
@@ -218,7 +265,7 @@ export function blocksToHtmlContent(blocks: Block[]): string {
     if (b.type === 'numbered_list_item') {
       const items: string[] = []
 
-      while (i < blocks.length && blocks[i].type === 'numbered_list_item') {
+      while (i < end && blocks[i].type === 'numbered_list_item') {
         items.push(`<li>${spansToHtml(blocks[i].content)}</li>`)
         i++
       }
@@ -230,8 +277,8 @@ export function blocksToHtmlContent(blocks: Block[]): string {
     const frag = blockToHtmlFragment(b)
 
     if (frag) {
-parts.push(frag)
-}
+      parts.push(frag)
+    }
 
     i++
   }

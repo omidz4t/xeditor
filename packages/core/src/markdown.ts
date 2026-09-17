@@ -694,10 +694,34 @@ export function blocksToMarkdown(blocks: Block[]): string {
     type === 'bulleted_list_item' || type === 'numbered_list_item' || type === 'to_do'
 
   const rendered: Array<{ type: string; md: string }> = []
-  for (const block of blocks) {
-    if (block.type === 'column_list' || block.type === 'column') continue
+  let i = 0
+  while (i < blocks.length) {
+    const block = blocks[i]
+    if (block.type === 'column_list' || block.type === 'column') {
+      i++
+      continue
+    }
+    if (block.type === 'toggle') {
+      const indent = block.props.indent ?? 0
+      let j = i + 1
+      while (j < blocks.length && (blocks[j].props.indent ?? 0) > indent) {
+        j++
+      }
+      const pad = indentPrefix(block.props.indent)
+      const title = spansToMarkdown(block.content) || 'Toggle'
+      const open = block.props.collapsed === false ? ' open' : ''
+      const inner = blocksToMarkdown(blocks.slice(i + 1, j)).trimEnd()
+      const body = inner ? `\n${inner}\n` : '\n'
+      rendered.push({
+        type: 'toggle',
+        md: `${pad}<details${open}>\n${pad}<summary>${title}</summary>${body}${pad}</details>`,
+      })
+      i = j
+      continue
+    }
     const md = blockToMarkdown(block, listNumbers)
     if (md) rendered.push({ type: block.type, md })
+    i++
   }
 
   const out: string[] = []
