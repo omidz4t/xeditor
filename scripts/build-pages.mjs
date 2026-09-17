@@ -229,7 +229,7 @@ function versionsTableHtml(versions, latest) {
       const latestMark = isLatest ? ' <span class="ver-latest">latest</span>' : ''
       return `<tr class="ver-row${isLatest ? ' ver-row--latest' : ''}" data-version="${m.version}">
   <th scope="row" class="ver-row__tag">v${m.version}${latestMark}</th>
-  <td><a href="${m.assets.app}">${defaultXdcName(m.version)}</a></td>
+  <td><a href="${m.assets.app}">xeditor.xdc</a></td>
   <td><a href="${m.assets.full}">full</a></td>
   <td><a href="${m.assets.lite}">lite</a></td>
   <td class="ver-row__notes"><a href="${m.releaseUrl}" target="_blank" rel="noopener">notes</a></td>
@@ -242,7 +242,7 @@ function versionsTableHtml(versions, latest) {
   <thead>
     <tr>
       <th scope="col">Version</th>
-      <th scope="col">xeditor.xdc</th>
+      <th scope="col">app</th>
       <th scope="col">full</th>
       <th scope="col">lite</th>
       <th scope="col"></th>
