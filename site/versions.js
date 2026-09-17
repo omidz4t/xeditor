@@ -21,10 +21,11 @@
     const full = escapeHtml(v.assets?.full || '#')
     const lite = escapeHtml(v.assets?.lite || '#')
     const notes = escapeHtml(v.releaseUrl || '#')
+    const appName = escapeHtml((String(v.assets?.app || '').split('/').pop() || 'xeditor.xdc'))
     const latestMark = isLatest ? ' <span class="ver-latest">latest</span>' : ''
     return `<tr class="ver-row${isLatest ? ' ver-row--latest' : ''}" data-version="${ver}">
   <th scope="row" class="ver-row__tag">v${ver}${latestMark}</th>
-  <td><a href="${app}">app.xdc</a></td>
+  <td><a href="${app}">${appName}</a></td>
   <td><a href="${full}">full</a></td>
   <td><a href="${lite}">lite</a></td>
   <td class="ver-row__notes"><a href="${notes}" target="_blank" rel="noopener">notes</a></td>
@@ -41,7 +42,7 @@
   <thead>
     <tr>
       <th scope="col">Version</th>
-      <th scope="col">app.xdc</th>
+      <th scope="col">xeditor.xdc</th>
       <th scope="col">full</th>
       <th scope="col">lite</th>
       <th scope="col"></th>

@@ -144,7 +144,7 @@ function formatBytes(bytes) {
 function readLocalXdcSizes() {
   const dir = join(root, 'dist-xdc')
   const files = {
-    app: 'app.xdc',
+    app: 'xeditor.xdc',
     full: 'editor-full.xdc',
     lite: 'editor-lite.xdc',
   }
@@ -165,17 +165,26 @@ function readLocalXdcSizes() {
   return sizes
 }
 
+/** Default .xdc filename on GitHub Releases. 0.1.26 and earlier shipped as app.xdc. */
+function defaultXdcName(version) {
+  const v = String(version).replace(/^v/, '')
+  const [maj, min, pat] = v.split('.').map((n) => Number.parseInt(n, 10))
+  if (maj === 0 && min === 1 && Number.isFinite(pat) && pat <= 26) return 'app.xdc'
+  return 'xeditor.xdc'
+}
+
 function releaseMeta(version, sizes = null) {
   const v = version.replace(/^v/, '')
   const tag = `v${v}`
   const base = `https://github.com/${REPO}/releases`
+  const defaultXdc = defaultXdcName(v)
   return {
     version: v,
     tag,
     releaseUrl: `${base}/tag/${tag}`,
     releasesUrl: base,
     assets: {
-      app: `${base}/download/${tag}/app.xdc`,
+      app: `${base}/download/${tag}/${defaultXdc}`,
       full: `${base}/download/${tag}/editor-full.xdc`,
       lite: `${base}/download/${tag}/editor-lite.xdc`,
     },
@@ -220,7 +229,7 @@ function versionsTableHtml(versions, latest) {
       const latestMark = isLatest ? ' <span class="ver-latest">latest</span>' : ''
       return `<tr class="ver-row${isLatest ? ' ver-row--latest' : ''}" data-version="${m.version}">
   <th scope="row" class="ver-row__tag">v${m.version}${latestMark}</th>
-  <td><a href="${m.assets.app}">app.xdc</a></td>
+  <td><a href="${m.assets.app}">${defaultXdcName(m.version)}</a></td>
   <td><a href="${m.assets.full}">full</a></td>
   <td><a href="${m.assets.lite}">lite</a></td>
   <td class="ver-row__notes"><a href="${m.releaseUrl}" target="_blank" rel="noopener">notes</a></td>
@@ -233,7 +242,7 @@ function versionsTableHtml(versions, latest) {
   <thead>
     <tr>
       <th scope="col">Version</th>
-      <th scope="col">app.xdc</th>
+      <th scope="col">xeditor.xdc</th>
       <th scope="col">full</th>
       <th scope="col">lite</th>
       <th scope="col"></th>
@@ -401,7 +410,7 @@ if (!existsSync(join(appDir, 'webxdc.js'))) {
 console.log(`Pages site → ${relative(root, outDir)}/`)
 console.log(`  version:  v${version}`)
 console.log(`  release:  ${meta.releaseUrl}`)
-console.log(`  app.xdc:  ${meta.assets.app} (${xdcSizes.labels.app})`)
+console.log(`  xeditor.xdc:  ${meta.assets.app} (${xdcSizes.labels.app})`)
 console.log(`  full.xdc: ${xdcSizes.labels.full}`)
 console.log(`  lite.xdc: ${xdcSizes.labels.lite}`)
 console.log(`  history:  ${history.length} tag(s)`)

@@ -18,7 +18,7 @@ Same collaboration stack (Yjs + webxdc), same block model (`@xproeditor/core`), 
 make install
 make dev       # Vite + mock webxdc
 make run       # multi-peer webxdc-dev
-make build     # dist/ + dist-xdc/app.xdc
+make build     # dist/ + dist-xdc/xeditor.xdc
 ```
 
 ## Notes

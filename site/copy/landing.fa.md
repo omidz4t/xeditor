@@ -26,7 +26,7 @@ Quote author: ویرایشگر XEditor · پلتفرم WebXDC
 
 ## Download
 
-Card 1 title: app.xdc
+Card 1 title: xeditor.xdc
 
 Card 1 body: بستهٔ پیش‌فرض برای استفادهٔ روزمره در دلتا چت (Delta Chat) — به‌همراه قلم‌های آراد (همهٔ وزن‌ها).
 

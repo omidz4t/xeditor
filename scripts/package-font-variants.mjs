@@ -4,7 +4,7 @@
  *   dist-xdc/editor-full.xdc  — Arad only (all weights) — no Shabnam
  *   dist-xdc/editor-lite.xdc  — Regular + Bold only (woff2) for Shabnam + Arad
  *
- * Also keeps dist-xdc/app.xdc as a copy of full (default build artifact).
+ * Also keeps dist-xdc/xeditor.xdc as a copy of full (default build artifact).
  *
  * Important for Delta Chat webxdc://:
  * - Do NOT use CSS @import chains (nested .css often arrives as text/plain and
@@ -194,7 +194,7 @@ function packageFull() {
 
   mkdirSync(outDir, { recursive: true })
   zipTo(join(outDir, 'editor-full.xdc'), files)
-  zipTo(join(outDir, 'app.xdc'), files)
+  zipTo(join(outDir, 'xeditor.xdc'), files)
 }
 
 /**
@@ -272,5 +272,5 @@ packageLite()
 writeDistPackageManifest()
 writeBrowserWebxdcMock()
 console.log('Done.')
-console.log('  full → dist-xdc/editor-full.xdc (also app.xdc) — Arad only, all weights')
+console.log('  full → dist-xdc/editor-full.xdc (also xeditor.xdc) — Arad only, all weights')
 console.log('  lite → dist-xdc/editor-lite.xdc — Shabnam + Arad (Regular + Bold woff2)')

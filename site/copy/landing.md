@@ -26,7 +26,7 @@ Quote author: XEditor · WebXDC
 
 ## Download
 
-Card 1 title: app.xdc
+Card 1 title: xeditor.xdc
 
 Card 1 body: Default package for everyday use in Delta Chat — Arad fonts (all weights).
 

@@ -5,7 +5,7 @@
 NPM ?= npm
 VITE_DEV_PORT ?= 5173
 WEBXDC_DEV_PORT ?= 7100
-WEBXDC_OUT := dist-xdc/app.xdc
+WEBXDC_OUT := dist-xdc/xeditor.xdc
 WEBXDC_FULL := dist-xdc/editor-full.xdc
 WEBXDC_LITE := dist-xdc/editor-lite.xdc
 PAGES_OUT := dist-pages

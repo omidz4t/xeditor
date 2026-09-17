@@ -70,7 +70,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "release_url=${BASE}/tag/${TAG}" >> "$GITHUB_OUTPUT"
-          echo "app_url=${BASE}/download/${TAG}/app.xdc" >> "$GITHUB_OUTPUT"
+          echo "app_url=${BASE}/download/${TAG}/xeditor.xdc" >> "$GITHUB_OUTPUT"
           echo "full_url=${BASE}/download/${TAG}/editor-full.xdc" >> "$GITHUB_OUTPUT"
           echo "lite_url=${BASE}/download/${TAG}/editor-lite.xdc" >> "$GITHUB_OUTPUT"
           {
@@ -80,7 +80,7 @@ jobs:
             echo "|--|--|"
             echo "| **Version** | \`${VERSION}\` (\`${TAG}\`) |"
             echo "| **Release** | ${BASE}/tag/${TAG} |"
-            echo "| **app.xdc** | ${BASE}/download/${TAG}/app.xdc |"
+            echo "| **xeditor.xdc** | ${BASE}/download/${TAG}/xeditor.xdc |"
             echo "| **editor-full.xdc** | ${BASE}/download/${TAG}/editor-full.xdc |"
             echo "| **editor-lite.xdc** | ${BASE}/download/${TAG}/editor-lite.xdc |"
             echo "| **Site** | https://omidz4t.github.io/xeditor/ |"
@@ -168,7 +168,7 @@ jobs:
           # It must not ship inside .xdc — checked via unzip below.
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/index.html
           grep -q "v${{ steps.version.outputs.version }}" dist-pages/versions.html
-          grep -q "releases/download/v${{ steps.version.outputs.version }}/app.xdc" dist-pages/index.html
+          grep -q "releases/download/v${{ steps.version.outputs.version }}/xeditor.xdc" dist-pages/index.html
           ! grep -q '__XEDITOR_VERSION__' dist-pages/index.html
           # Screenshots ship only in the deployed site (not as a main-branch commit)
           test -f dist-pages/screenshots/app-editor.jpg
@@ -177,16 +177,16 @@ jobs:
           test -f dist-pages/screenshots/fa/app-editor.jpg
           test -f dist-pages/fa/index.html
           ! grep -q '__XEDITOR_VERSION__' dist-pages/fa/index.html
-          test -f dist-xdc/app.xdc
+          test -f dist-xdc/xeditor.xdc
           test -f dist-xdc/editor-full.xdc
           test -f dist-xdc/editor-lite.xdc
-          leak=$(unzip -l dist-xdc/app.xdc | grep -E 'site/|Marketing landing|webxdc-mock|Browser demo mock' || true)
+          leak=$(unzip -l dist-xdc/xeditor.xdc | grep -E 'site/|Marketing landing|webxdc-mock|Browser demo mock' || true)
           if [ -n "$leak" ]; then
             echo "Marketing/mock leaked into .xdc" >&2
             echo "$leak" >&2
             exit 1
           fi
-          mockjs=$(unzip -l dist-xdc/app.xdc | grep -E '(^|/)webxdc\.js$' || true)
+          mockjs=$(unzip -l dist-xdc/xeditor.xdc | grep -E '(^|/)webxdc\.js$' || true)
           if [ -n "$mockjs" ]; then
             echo "Mock webxdc.js must not be inside .xdc (host provides it)" >&2
             echo "$mockjs" >&2
@@ -217,7 +217,7 @@ jobs:
           name: XEditor v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            dist-xdc/app.xdc
+            dist-xdc/xeditor.xdc
             dist-xdc/editor-full.xdc
             dist-xdc/editor-lite.xdc
           body: |
@@ -228,7 +228,7 @@ jobs:
             ### Downloads
             | Package | Link |
             |---------|------|
-            | `app.xdc` (default) | ${{ steps.version.outputs.app_url }} |
+            | `xeditor.xdc` (default) | ${{ steps.version.outputs.app_url }} |
             | `editor-full.xdc` | ${{ steps.version.outputs.full_url }} |
             | `editor-lite.xdc` | ${{ steps.version.outputs.lite_url }} |
 
